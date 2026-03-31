@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Environment (never commit secrets)
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Test / coverage
+coverage/
+.nyc_output/
+
+# Build / temp
+dist/
+build/
+tmp/
+temp/
+*.tmp
+
+# Optional Firebase service account JSON (prefer env vars)
+*-firebase-adminsdk-*.json
+firebase-service-account.json
