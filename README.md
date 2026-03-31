@@ -1,86 +1,62 @@
-# Businexa API
+# businexa-apps
 
-Node.js + Express REST API for **Businexa**, a QR code advertisement platform connecting shop owners and customers. Authentication uses **Firebase** (OTP flow with server-side hashing), persistence uses **MongoDB** (Mongoose), and subscriptions use **Razorpay**.
+Monorepo for the **Businexa** platform: **API** (Express), **web** (Next.js), **mobile** (Expo), and **shared** packages.
 
-## Requirements
+## Layout
 
-- Node.js 18+
-- MongoDB (Atlas or local)
-- Firebase project with Admin SDK credentials (for verifying ID tokens and custom tokens after OTP)
-- Razorpay keys (for payments)
+| Path | Package | Description |
+|------|---------|-------------|
+| `apps/api` | `@businexa/api` | Node.js Express API (`server.js`, `src/`) |
+| `apps/web` | `@businexa/web` | Next.js App Router, Tailwind, OTP + seller dashboard |
+| `apps/mobile` | `@businexa/mobile` | Expo Router, tabs, OTP + dashboard |
+| `packages/shared` | `@businexa/shared` | Shared types/utilities (optional) |
 
-## Quick start
+## Install
 
-1. **Install dependencies**
+From the repository root:
 
-   ```bash
-   npm install
-   ```
+```bash
+npm install
+```
 
-2. **Environment**
-
-   Copy `.env.example` to `.env` and set at least:
-
-   - `MONGODB_URI`
-   - `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` (newline escapes as `\n` in `.env`)
-   - `RAZORPAY_KEY_ID`, `RAZORPAY_SECRET` (for subscription orders)
-   - `CORS_ORIGIN` (comma-separated allowed origins)
-
-3. **Run**
-
-   ```bash
-   npm run dev
-   ```
-
-   Server defaults to `http://localhost:5000` (override with `PORT`).
-
-4. **Health check**
-
-   ```http
-   GET /health
-   ```
-
-## Project layout
-
-| Path | Purpose |
-|------|---------|
-| `server.js` | Process entry: loads env, connects MongoDB, listens |
-| `src/app.js` | Express app: security headers, CORS, JSON body, `/api/*` routes |
-| `src/config/` | MongoDB, Firebase Admin, Razorpay clients |
-| `src/models/` | Mongoose schemas (`User`, `Shop`, `Product`, `Subscription`, etc.) |
-| `src/routes/` | Route modules mounted under `/api/auth`, `/api/shops`, … |
-| `src/controllers/` | HTTP handlers |
-| `src/services/` | OTP, auth, shops, subscriptions, QR, email |
-| `src/middleware/` | Auth, rate limits, validation (Joi), errors |
-| `src/utils/` | Logging (Winston), crypto helpers, validators, cloud storage stubs |
-
-See `NODEJS_API_GENERATION_PROMPT.md` in the repo for full endpoint and schema specifications.
-
-## API overview
-
-- **Auth** — `POST /api/auth/send-otp`, `POST /api/auth/verify-otp`, `GET /api/auth/me`, …
-- **Shops** — CRUD, metrics, QR URL generation (requires active subscription)
-- **Products** — CRUD, search, categories (multipart `image` supported; upload wiring to S3/Cloudinary is pluggable in `src/utils/cloudStorage.js`)
-- **Subscriptions** — plans, Razorpay order/create/verify, webhooks
-- **Users** — profile, preferences, notifications, account deletion
-- **QR** — public tracking and shop payload endpoints
-- **Analytics** — dashboard and per-shop summaries (when `ENABLE_ANALYTICS=true`)
+Workspace packages are linked automatically.
 
 ## Scripts
 
 | Command | Description |
 |---------|-------------|
-| `npm start` | Production start (`node server.js`) |
-| `npm run dev` | Development with nodemon |
-| `npm test` | Jest (add tests under `__tests__` or `*.test.js`) |
-| `npm run format` | Prettier |
+| `npm run dev:api` | API dev server (`nodemon`) |
+| `npm run start:api` | API production start |
+| `npm run test:api` | API tests |
+| `npm run dev:web` | Next.js web (`apps/web`) |
+| `npm run build:web` | Production build for web |
+| `npm run dev:mobile` | Expo dev (`apps/mobile`) |
 
-## Security notes
+## API environment
 
-- OTPs are hashed (PBKDF2) before storage; development mode may log OTP to the console for testing only.
-- Razorpay webhooks should verify `X-Razorpay-Signature` against the **raw** request body in production; the included handler is a starting point—confirm Razorpay’s signing requirements for your integration.
-- Never commit `.env` or service account JSON files.
+Copy and configure env for the API:
 
-## License
+```bash
+cp apps/api/.env.example apps/api/.env
+```
 
-Proprietary / UNLICENSED unless otherwise specified by the project owner.
+Run the API from root with `npm run dev:api` or from `apps/api` with `npm run dev`.
+
+### Web & mobile env
+
+- Web: `cp apps/web/.env.example apps/web/.env.local`
+- Mobile: copy `apps/mobile/.env.example` and set `EXPO_PUBLIC_*` variables.
+
+## Shared code
+
+Import from other workspaces using package names, for example:
+
+```js
+const { /* ... */ } = require('@businexa/shared');
+```
+
+Add `@businexa/shared` to `dependencies` in consuming packages when you start using it.
+
+## Git
+
+The Git repository root is this folder (`businexa-apps` / `web-app-businexa` locally).

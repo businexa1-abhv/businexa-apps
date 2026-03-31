@@ -1,0 +1,99 @@
+import axios, { type AxiosError } from 'axios';
+import { getStoredToken, setStoredToken } from './storage';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
+export const apiClient = axios.create({
+  baseURL: API_URL,
+  timeout: 30000,
+  headers: { 'Content-Type': 'application/json' },
+});
+
+apiClient.interceptors.request.use((config) => {
+  const token = getStoredToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+apiClient.interceptors.response.use(
+  (res) => res,
+  (err: AxiosError) => {
+    if (err.response?.status === 401 && typeof window !== 'undefined') {
+      setStoredToken(null);
+      window.dispatchEvent(new CustomEvent('businexa:auth-expired'));
+    }
+    return Promise.reject(err);
+  }
+);
+
+// —— Auth ——
+export const sendOTP = (mobileNumber: string, checkUserExists?: boolean) =>
+  apiClient.post('/auth/send-otp', { mobileNumber, checkUserExists });
+
+export const verifyOTP = (mobileNumber: string, otp: string, role?: 'buyer' | 'seller') =>
+  apiClient.post('/auth/verify-otp', { mobileNumber, otp, role });
+
+export const getMe = () => apiClient.get('/auth/me');
+
+export const logoutApi = () => apiClient.post('/auth/logout');
+
+// —— Shops ——
+export const createShop = (data: Record<string, unknown>) => apiClient.post('/shops', data);
+
+export const getMyShop = () => apiClient.get('/shops/my-shop');
+
+export const getPublicShop = (slug: string) => apiClient.get(`/shops/${encodeURIComponent(slug)}`);
+
+export const updateShop = (shopId: string, data: Record<string, unknown>) =>
+  apiClient.put(`/shops/${shopId}`, data);
+
+export const getShopMetrics = (shopId: string) => apiClient.get(`/shops/${shopId}/metrics`);
+
+export const generateShopQr = (shopId: string) => apiClient.post(`/shops/${shopId}/generate-qr`);
+
+// —— Products ——
+export const getMyProducts = (page = 1, limit = 20) =>
+  apiClient.get('/products/my-products', { params: { page, limit } });
+
+export const listProductsByShop = (shopId: string, page = 1, limit = 20) =>
+  apiClient.get('/products', { params: { shopId, page, limit } });
+
+export const getProduct = (productId: string) => apiClient.get(`/products/${productId}`);
+
+export const searchProducts = (q: string, shopId?: string) =>
+  apiClient.get('/products/search', { params: { q, shopId } });
+
+export const createProductForm = (form: FormData) =>
+  apiClient.post('/products', form, { headers: { 'Content-Type': 'multipart/form-data' } });
+
+export const updateProductForm = (productId: string, form: FormData) =>
+  apiClient.put(`/products/${productId}`, form, { headers: { 'Content-Type': 'multipart/form-data' } });
+
+export const deleteProduct = (productId: string) => apiClient.delete(`/products/${productId}`);
+
+// —— Subscriptions ——
+export const getPlans = () => apiClient.get('/subscriptions/plans');
+
+export const createOrder = (planId: string, shopId: string) =>
+  apiClient.post('/subscriptions/create-order', { planId, shopId });
+
+export const verifyPayment = (body: {
+  orderId: string;
+  paymentId: string;
+  signature: string;
+  shopId: string;
+  planId: string;
+}) => apiClient.post('/subscriptions/verify-payment', body);
+
+export const listSubscriptions = () => apiClient.get('/subscriptions');
+
+export const getShopSubscription = (shopId: string) => apiClient.get(`/subscriptions/shop/${shopId}`);
+
+// —— Users ——
+export const getProfile = () => apiClient.get('/users/profile');
+
+export const updateProfile = (data: Record<string, unknown>) => apiClient.put('/users/profile', data);
+
+export const updatePreferences = (data: Record<string, unknown>) => apiClient.put('/users/preferences', data);

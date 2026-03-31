@@ -1,4 +1,4 @@
-# Dependencies (root + workspaces)
+# Dependencies
 node_modules/
 
 # Environment (never commit secrets)
@@ -31,15 +31,6 @@ tmp/
 temp/
 *.tmp
 
-# Firebase service account JSON (API)
+# Optional Firebase service account JSON (prefer env vars)
 *-firebase-adminsdk-*.json
-**/firebase-service-account.json
-
-# Mobile / web (common)
-.expo/
-*.jks
-*.p8
-*.p12
-*.mobileprovision
-*.orig.*
-web-build/
+firebase-service-account.json

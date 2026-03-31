@@ -1,0 +1,600 @@
+{
+  "info": {
+    "_postman_id": "a8f3c210-9b4d-4e1f-8c2a-businexa-api",
+    "name": "Businexa API",
+    "description": "Local default: `baseUrl` = `http://localhost:5000` (see `PORT` in `.env`).\n\n**Protected routes** expect `Authorization: Bearer <Firebase ID token>`. The `verify-otp` response returns a **custom token** (`firebaseToken`); exchange it with the Firebase client SDK or Identity Toolkit REST API to obtain an **ID token**, then paste it into the `token` variable.\n\n`POST /api/auth/refresh` currently returns 501 (not implemented).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000" },
+    { "key": "token", "value": "" },
+    { "key": "shopId", "value": "507f1f77bcf86cd799439011" },
+    { "key": "shopSlugOrId", "value": "my-shop-slug" },
+    { "key": "productId", "value": "507f1f77bcf86cd799439012" },
+    { "key": "notificationId", "value": "507f1f77bcf86cd799439013" },
+    { "key": "subscriptionId", "value": "507f1f77bcf86cd799439014" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET /health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/health"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "POST /api/auth/send-otp",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobileNumber\": \"9876543210\",\n  \"checkUserExists\": false\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/send-otp"
+          }
+        },
+        {
+          "name": "POST /api/auth/verify-otp",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobileNumber\": \"9876543210\",\n  \"otp\": \"123456\",\n  \"role\": \"seller\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/verify-otp"
+          }
+        },
+        {
+          "name": "POST /api/auth/refresh",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"your-refresh-token\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/refresh"
+          }
+        },
+        {
+          "name": "GET /api/auth/me",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/auth/me"
+          }
+        },
+        {
+          "name": "POST /api/auth/logout",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/auth/logout"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Shops",
+      "item": [
+        {
+          "name": "GET /api/shops/:shopIdOrSlug (public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/shops/{{shopSlugOrId}}"
+          }
+        },
+        {
+          "name": "GET /api/shops/my-shop",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/shops/my-shop"
+          }
+        },
+        {
+          "name": "POST /api/shops",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"My Shop\",\n  \"address\": \"123 Street\",\n  \"category\": \"retail\",\n  \"whatsappNumber\": \"9876543210\",\n  \"email\": \"shop@example.com\"\n}"
+            },
+            "url": "{{baseUrl}}/api/shops"
+          }
+        },
+        {
+          "name": "PUT /api/shops/:shopId",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Shop Name\",\n  \"address\": \"456 Road\"\n}"
+            },
+            "url": "{{baseUrl}}/api/shops/{{shopId}}"
+          }
+        },
+        {
+          "name": "DELETE /api/shops/:shopId",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/shops/{{shopId}}"
+          }
+        },
+        {
+          "name": "GET /api/shops/:shopId/metrics",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/shops/{{shopId}}/metrics"
+          }
+        },
+        {
+          "name": "POST /api/shops/:shopId/generate-qr",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/shops/{{shopId}}/generate-qr"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "GET /api/products/search",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/search?q=sample&shopId={{shopId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", "search"],
+              "query": [
+                { "key": "q", "value": "sample" },
+                { "key": "shopId", "value": "{{shopId}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/products/category/:category",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/category/electronics?shopId={{shopId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", "category", "electronics"],
+              "query": [{ "key": "shopId", "value": "{{shopId}}" }]
+            }
+          }
+        },
+        {
+          "name": "GET /api/products (list by shop)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products?shopId={{shopId}}&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products"],
+              "query": [
+                { "key": "shopId", "value": "{{shopId}}" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/products/:productId",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/products/{{productId}}"
+          }
+        },
+        {
+          "name": "GET /api/products/my-products",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/my-products?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", "my-products"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/products (multipart)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "name", "value": "Sample product", "type": "text" },
+                { "key": "description", "value": "Optional description", "type": "text" },
+                { "key": "price", "value": "199.99", "type": "text" },
+                { "key": "category", "value": "general", "type": "text" },
+                { "key": "imageUrl", "value": "", "type": "text", "description": "Optional if you upload image" },
+                { "key": "image", "type": "file", "src": "", "disabled": true }
+              ]
+            },
+            "url": "{{baseUrl}}/api/products"
+          }
+        },
+        {
+          "name": "PUT /api/products/:productId (multipart)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "name", "value": "Updated name", "type": "text" },
+                { "key": "description", "value": "", "type": "text" },
+                { "key": "price", "value": "149.00", "type": "text" },
+                { "key": "category", "value": "", "type": "text" },
+                { "key": "isVisible", "value": "true", "type": "text" },
+                { "key": "image", "type": "file", "src": "", "disabled": true }
+              ]
+            },
+            "url": "{{baseUrl}}/api/products/{{productId}}"
+          }
+        },
+        {
+          "name": "DELETE /api/products/:productId",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/products/{{productId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Subscriptions",
+      "item": [
+        {
+          "name": "GET /api/subscriptions/plans",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/subscriptions/plans"
+          }
+        },
+        {
+          "name": "POST /api/subscriptions/webhook/razorpay",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": "{{baseUrl}}/api/subscriptions/webhook/razorpay"
+          }
+        },
+        {
+          "name": "POST /api/subscriptions/create-order",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"planId\": \"monthly\",\n  \"shopId\": \"{{shopId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/subscriptions/create-order"
+          }
+        },
+        {
+          "name": "POST /api/subscriptions/verify-payment",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"order_xxx\",\n  \"paymentId\": \"pay_xxx\",\n  \"signature\": \"sig_xxx\",\n  \"shopId\": \"{{shopId}}\",\n  \"planId\": \"monthly\"\n}"
+            },
+            "url": "{{baseUrl}}/api/subscriptions/verify-payment"
+          }
+        },
+        {
+          "name": "GET /api/subscriptions",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/subscriptions"
+          }
+        },
+        {
+          "name": "GET /api/subscriptions/shop/:shopId",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/subscriptions/shop/{{shopId}}"
+          }
+        },
+        {
+          "name": "POST /api/subscriptions/:subscriptionId/cancel",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/subscriptions/{{subscriptionId}}/cancel"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "GET /api/users/profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/users/profile"
+          }
+        },
+        {
+          "name": "PUT /api/users/profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Jane Doe\",\n  \"email\": \"jane@example.com\",\n  \"profileImage\": \"https://example.com/avatar.png\"\n}"
+            },
+            "url": "{{baseUrl}}/api/users/profile"
+          }
+        },
+        {
+          "name": "PUT /api/users/preferences",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"language\": \"en\",\n  \"theme\": \"dark\",\n  \"notifications\": true\n}"
+            },
+            "url": "{{baseUrl}}/api/users/preferences"
+          }
+        },
+        {
+          "name": "GET /api/users/notifications",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/notifications?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "notifications"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "PUT /api/users/notifications/:notificationId/read",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "PUT",
+            "header": [],
+            "url": "{{baseUrl}}/api/users/notifications/{{notificationId}}/read"
+          }
+        },
+        {
+          "name": "DELETE /api/users/account",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/users/account"
+          }
+        }
+      ]
+    },
+    {
+      "name": "QR",
+      "item": [
+        {
+          "name": "POST /api/qr/track/:shopId",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userAgent\": \"Postman\",\n  \"referer\": \"https://example.com\",\n  \"ipAddress\": \"127.0.0.1\"\n}"
+            },
+            "url": "{{baseUrl}}/api/qr/track/{{shopId}}"
+          }
+        },
+        {
+          "name": "POST /api/qr/product/:productId/track",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userAgent\": \"Postman\",\n  \"ipAddress\": \"127.0.0.1\"\n}"
+            },
+            "url": "{{baseUrl}}/api/qr/product/{{productId}}/track"
+          }
+        },
+        {
+          "name": "GET /api/qr/:shopId",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/qr/{{shopId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "GET /api/analytics/dashboard",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/dashboard?from=&to=",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "analytics", "dashboard"],
+              "query": [
+                { "key": "from", "value": "" },
+                { "key": "to", "value": "" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/analytics/shops/:shopId",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/analytics/shops/{{shopId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Docs (browser)",
+      "item": [
+        {
+          "name": "GET /api-docs (Swagger UI)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api-docs"
+          }
+        }
+      ]
+    }
+  ]
+}

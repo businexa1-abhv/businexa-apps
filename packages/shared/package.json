@@ -1,0 +1,10 @@
+{
+  "name": "@businexa/shared",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Shared code for Businexa (types, constants, small utils)",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js"
+  }
+}
