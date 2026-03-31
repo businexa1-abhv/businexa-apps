@@ -92,27 +92,36 @@ async function createOtpForMobile(mobileNumber) {
  * Verify OTP with constant-time hash compare; increment attempts on failure; mark verified on success.
  */
 async function verifyOtpRecord(mobileNumber, otp) {
-  const record = await OTPVerification.findOne({ mobileNumber, verified: false }).sort({ createdAt: -1 });
+  const now = new Date();
+  const pending = await OTPVerification.findOne({ mobileNumber, verified: false }).sort({ createdAt: -1 });
 
-  if (!record || record.expiresAt < new Date()) {
-    return { ok: false, reason: 'expired_or_missing' };
+  if (!pending) {
+    const latest = await OTPVerification.findOne({ mobileNumber }).sort({ createdAt: -1 });
+    if (latest?.verified) {
+      return { ok: false, reason: 'already_used' };
+    }
+    return { ok: false, reason: 'not_sent' };
   }
 
-  if (record.attempts >= MAX_OTP_ATTEMPTS) {
+  if (pending.expiresAt < now) {
+    return { ok: false, reason: 'expired' };
+  }
+
+  if (pending.attempts >= MAX_OTP_ATTEMPTS) {
     return { ok: false, reason: 'too_many_attempts' };
   }
 
-  record.attempts += 1;
+  pending.attempts += 1;
 
-  const match = await verifyOtpHash(otp, record.otpSalt, record.otpHash);
+  const match = await verifyOtpHash(otp, pending.otpSalt, pending.otpHash);
   if (!match) {
-    await record.save();
+    await pending.save();
     return { ok: false, reason: 'invalid' };
   }
 
-  record.verified = true;
-  await record.save();
-  return { ok: true, record };
+  pending.verified = true;
+  await pending.save();
+  return { ok: true, record: pending };
 }
 
 module.exports = {

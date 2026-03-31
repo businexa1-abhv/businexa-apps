@@ -74,12 +74,14 @@ async function verifyOtpAndIssue(mobileNumber, otp, role = ROLES.BUYER) {
   const result = await verifyOtpRecord(mobileNumber, otp);
 
   if (!result.ok) {
-    const msg =
-      result.reason === 'expired_or_missing'
-        ? 'OTP expired or not found'
-        : result.reason === 'too_many_attempts'
-          ? 'Too many invalid attempts. Request a new OTP.'
-          : 'Invalid OTP';
+    const messages = {
+      expired: 'OTP expired. Request a new code from the login screen.',
+      not_sent: 'No active OTP for this number. Go back and tap Send OTP, then verify within the time limit.',
+      already_used: 'This OTP was already used. Request a new OTP from the login screen.',
+      too_many_attempts: 'Too many invalid attempts. Request a new OTP.',
+      invalid: 'Invalid OTP',
+    };
+    const msg = messages[result.reason] || 'OTP expired or not found';
     return { success: false, message: msg };
   }
 
@@ -93,16 +95,20 @@ async function verifyOtpAndIssue(mobileNumber, otp, role = ROLES.BUYER) {
     if (!admin.apps.length) {
       return { success: false, message: 'Firebase not configured' };
     }
-    const phoneE164 = `+91${mobileNumber}`;
+    // Do not set phoneNumber on createUser — that requires Phone auth to be configured in
+    // Firebase Console and can throw auth/configuration-not-found. Mobile is verified via our OTP + MongoDB.
     let firebaseUser;
     try {
-      firebaseUser = await admin.auth().createUser({ phoneNumber: phoneE164 });
+      firebaseUser = await admin.auth().createUser({});
     } catch (err) {
-      if (err.code === 'auth/phone-number-already-exists') {
-        firebaseUser = await admin.auth().getUserByPhoneNumber(phoneE164);
-      } else {
-        throw err;
+      if (err.code === 'auth/configuration-not-found') {
+        return {
+          success: false,
+          message:
+            'Firebase Authentication is not set up for this project. In Firebase Console open Authentication and click Get started, then retry. Ensure FIREBASE_PROJECT_ID / service account match the same project.',
+        };
       }
+      throw err;
     }
     let newRole = resolveSignupRole(role);
     if (isListedAdminPhone(mobileNumber)) {

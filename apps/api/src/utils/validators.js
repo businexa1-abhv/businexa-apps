@@ -7,11 +7,18 @@
 const Joi = require('joi');
 const { z } = require('zod');
 const { OTP_SIGNUP_ROLES } = require('../constants/roles');
+const { normalizeIndianMobile } = require('./adminPhones');
 
+/** 10-digit Indian mobile; accepts +91 / 91 / spaces so DB always matches verify lookup. */
 const mobileSchema = Joi.string()
-  .pattern(/^[6-9]\d{9}$/)
   .required()
-  .messages({ 'string.pattern.base': 'Invalid Indian mobile number' });
+  .custom((value, helpers) => {
+    const n = normalizeIndianMobile(value);
+    if (!n) {
+      return helpers.error('any.custom', { message: 'Invalid Indian mobile number' });
+    }
+    return n;
+  }, 'Indian mobile normalization');
 
 const objectIdString = Joi.string().hex().length(24);
 
