@@ -11,6 +11,7 @@ const { ROLES, OTP_SIGNUP_ROLES } = require('../constants/roles');
 const { isListedAdminPhone } = require('../utils/adminPhones');
 const { initFirebaseAdmin } = require('../config/firebase');
 const { createOtpForMobile, verifyOtpRecord } = require('./otpService');
+const { sendOtpSms } = require('./msg91Service');
 
 async function sendOtp(mobileNumber, checkUserExists) {
   const exists = await User.exists({ mobileNumber });
@@ -30,11 +31,29 @@ async function sendOtp(mobileNumber, checkUserExists) {
     };
   }
 
-  const { otp, expiresIn } = await createOtpForMobile(mobileNumber);
+  const { otp, expiresIn, testMode } = await createOtpForMobile(mobileNumber);
 
-  if (process.env.NODE_ENV === 'development') {
-    // eslint-disable-next-line no-console
-    console.log(`[dev] OTP for ${mobileNumber}: ${otp}`);
+  const sms = await sendOtpSms(mobileNumber, otp);
+
+  if (sms.skipped) {
+    if (process.env.NODE_ENV === 'development') {
+      // eslint-disable-next-line no-console
+      if (testMode) {
+        console.log(
+          `[test-otp] Fixed OTP for ${mobileNumber}: ${otp} (TEST_OTP_ENABLED — use on verify screen; then Firebase custom token. Roles: seller=signup default; buyer=verify role; admin=${process.env.ADMIN_MOBILE_NUMBERS ? 'ADMIN_MOBILE_NUMBERS' : 'set ADMIN_MOBILE_NUMBERS'})`
+        );
+      } else {
+        console.log(
+          `[dev] OTP for ${mobileNumber}: ${otp} (use this code; after verify, Firebase issues the session token. MSG91: MSG91_ENABLED=true when ready)`
+        );
+      }
+    }
+  } else if (!sms.sent) {
+    return {
+      success: false,
+      message: sms.error || 'Could not send OTP. Please try again later.',
+      expiresIn: 0,
+    };
   }
 
   return {

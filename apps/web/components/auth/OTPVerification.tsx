@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { OTPInput } from '@/components/ui/OTPInput';
@@ -11,6 +11,7 @@ const RESEND_SEC = 60;
 
 export function OTPVerification() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { verifyOTP, sendOTP, isLoading, error, clearError } = useAuth();
   const [otp, setOtp] = useState('');
   const [mobile, setMobile] = useState('');
@@ -45,7 +46,9 @@ export function OTPVerification() {
 
   const submit = async (code: string) => {
     clearError();
-    const role = 'seller' as const;
+    const roleParam = searchParams.get('role');
+    const role =
+      roleParam === 'buyer' || roleParam === 'seller' ? roleParam : ('seller' as const);
     const res = await verifyOTP(mobile, code, role);
     if (!res.success) {
       submitOnce.current = false;
