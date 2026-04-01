@@ -1,8 +1,22 @@
-import axios, { type AxiosError } from 'axios';
+import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { getStoredToken, setStoredToken } from './storage';
+import { getApiLoadingStore } from './apiLoadingStore';
 import type { RegisterPasswordPayload } from '@/types/api';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
+const SKIP_LOADER_HEADER = 'X-Skip-Global-Loader';
+
+function shouldSkipGlobalLoader(config: InternalAxiosRequestConfig): boolean {
+  const h = config.headers;
+  if (!h) return false;
+  const raw =
+    typeof (h as { get?: (key: string) => unknown }).get === 'function'
+      ? (h as { get: (key: string) => unknown }).get(SKIP_LOADER_HEADER)
+      : (h as Record<string, unknown>)[SKIP_LOADER_HEADER] ??
+        (h as Record<string, unknown>)['x-skip-global-loader'];
+  return raw === 'true' || raw === true;
+}
 
 export const apiClient = axios.create({
   baseURL: API_URL,
@@ -15,12 +29,24 @@ apiClient.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  if (!shouldSkipGlobalLoader(config)) {
+    getApiLoadingStore().begin();
+  }
   return config;
 });
 
 apiClient.interceptors.response.use(
-  (res) => res,
+  (res) => {
+    if (!shouldSkipGlobalLoader(res.config)) {
+      getApiLoadingStore().end();
+    }
+    return res;
+  },
   (err: AxiosError) => {
+    const cfg = err.config;
+    if (cfg && !shouldSkipGlobalLoader(cfg)) {
+      getApiLoadingStore().end();
+    }
     if (err.response?.status === 401 && typeof window !== 'undefined') {
       setStoredToken(null);
       window.dispatchEvent(new CustomEvent('businexa:auth-expired'));
@@ -28,6 +54,11 @@ apiClient.interceptors.response.use(
     return Promise.reject(err);
   }
 );
+
+/** Pass as axios config to skip the global overlay for that call (e.g. silent refresh). */
+export const skipGlobalLoaderConfig = {
+  headers: { [SKIP_LOADER_HEADER]: 'true' },
+} as const;
 
 // —— Auth ——
 export const sendOTP = (mobileNumber: string, checkUserExists?: boolean) =>
@@ -54,6 +85,31 @@ export const logoutApi = () => apiClient.post('/auth/logout');
 // —— Admin (Bearer; role admin) ——
 export const adminListUsers = (params?: { page?: number; limit?: number; role?: string }) =>
   apiClient.get('/admin/users', { params });
+
+export const adminGetUser = (userId: string) => apiClient.get(`/admin/users/${userId}`);
+
+export type AdminCreateUserPayload = {
+  username: string;
+  password: string;
+  role: 'buyer' | 'seller' | 'admin';
+  fullName?: string;
+  adminLevel?: 'super-admin' | 'moderator' | 'analyst' | 'support';
+};
+
+export const adminCreateUser = (payload: AdminCreateUserPayload) =>
+  apiClient.post('/admin/users', payload);
+
+export type AdminPatchUserPayload = {
+  fullName?: string;
+  isVerified?: boolean;
+  profileImage?: string;
+  email?: string;
+};
+
+export const adminPatchUser = (userId: string, payload: AdminPatchUserPayload) =>
+  apiClient.patch(`/admin/users/${userId}`, payload);
+
+export const adminDeleteUser = (userId: string) => apiClient.delete(`/admin/users/${userId}`);
 
 export const adminPatchUserRole = (userId: string, role: string) =>
   apiClient.patch(`/admin/users/${userId}/role`, { role });

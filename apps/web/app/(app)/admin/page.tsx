@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import * as api from '@/lib/api';
 import { RoleGate } from '@/components/auth/RoleGate';
+import { AdminUsersPanel } from '@/components/admin/AdminUsersPanel';
 import { Card } from '@/components/ui/Card';
 
 type Stats = {
@@ -28,7 +29,13 @@ export default function AdminOverviewPage() {
       <div className="space-y-8">
         <div>
           <h1 className="text-2xl font-bold text-secondary">Admin</h1>
-          <p className="mt-1 text-textLight">Manage users, roles, shops, and products across the platform.</p>
+          <p className="mt-1 text-textLight">
+            Stats below; the full user table is on this page (scroll down) and on{' '}
+            <Link href="/admin/users" className="text-primary hover:underline">
+              /admin/users
+            </Link>
+            .
+          </p>
         </div>
 
         {err ? <p className="text-sm text-danger">{err}</p> : null}
@@ -59,7 +66,7 @@ export default function AdminOverviewPage() {
             href="/admin/users"
             className="inline-flex rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
           >
-            User roles
+            User list (full page)
           </Link>
           <Link
             href="/admin/audit-logs"
@@ -77,6 +84,8 @@ export default function AdminOverviewPage() {
             Back to dashboard
           </Link>
         </div>
+
+        <AdminUsersPanel variant="embedded" />
       </div>
     </RoleGate>
   );

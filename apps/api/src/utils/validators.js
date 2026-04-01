@@ -11,6 +11,7 @@ const {
   isValidLoginEmail,
 } = require('@businexa/shared');
 const { OTP_SIGNUP_ROLES, USER_ROLES } = require('../constants/roles');
+const { ADMIN_LEVELS } = require('../constants/adminAccess');
 const { normalizeIndianMobile } = require('./adminPhones');
 const { otpLength } = require('../constants/otp');
 
@@ -104,6 +105,43 @@ const adminUpdateUserRoleBody = Joi.object({
     .required(),
 });
 
+/** PATCH /api/admin/users/:userId — profile fields (not role; use …/role). */
+const adminPatchUserBody = Joi.object({
+  fullName: Joi.string().trim().max(200).allow('', null),
+  isVerified: Joi.boolean(),
+  profileImage: Joi.string().uri().allow('', null).max(2000),
+  email: Joi.string()
+    .trim()
+    .max(320)
+    .optional()
+    .custom((value, helpers) => {
+      if (value === undefined || value === null || value === '') return undefined;
+      if (!isValidLoginEmail(value)) {
+        return helpers.error('any.custom', { message: 'Enter a valid email address' });
+      }
+      return String(value).trim().toLowerCase();
+    }, 'login email'),
+})
+  .min(1)
+  .messages({ 'object.min': 'At least one field is required' });
+
+/** POST /api/admin/users — JWT (email) accounts only; OTP/mobile users use public signup. */
+const adminCreateUserBody = Joi.object({
+  username: loginEmailSchema,
+  password: strongPasswordSchema,
+  role: Joi.string()
+    .valid(...USER_ROLES)
+    .required(),
+  fullName: Joi.string().trim().max(200).allow('', null),
+  adminLevel: Joi.string()
+    .valid(...ADMIN_LEVELS)
+    .when('role', {
+      is: 'admin',
+      then: Joi.optional(),
+      otherwise: Joi.forbidden(),
+    }),
+});
+
 const loginPasswordBody = Joi.object({
   username: loginEmailSchema,
   password: Joi.string().min(1).max(128).required(),
@@ -194,6 +232,8 @@ module.exports = {
   verifyOtpBody,
   registerPasswordBody,
   adminUpdateUserRoleBody,
+  adminPatchUserBody,
+  adminCreateUserBody,
   loginPasswordBody,
   forgotPasswordBody,
   resetPasswordBody,

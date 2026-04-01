@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Script from 'next/script';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useShop } from '@/hooks/useShop';
@@ -9,6 +10,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import * as api from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
 import { useNotifications } from '@/context/NotificationContext';
+import { useAuthStore } from '@/store/authStore';
 import type { SubscriptionPlan } from '@/types';
 
 declare global {
@@ -18,6 +20,8 @@ declare global {
 }
 
 export default function SubscriptionsPage() {
+  const router = useRouter();
+  const userRole = useAuthStore((s) => s.user?.role);
   const { shop } = useShop();
   const { plans, subscription, getActiveSubscription, createOrder, verifyPayment, isLoading } = useSubscription();
   const { showToast } = useNotifications();
@@ -25,15 +29,22 @@ export default function SubscriptionsPage() {
   const [razorpayReady, setRazorpayReady] = useState(false);
 
   useEffect(() => {
-    if (shop?._id) getActiveSubscription(shop._id);
-  }, [shop?._id, getActiveSubscription]);
+    if (userRole && userRole !== 'seller') {
+      router.replace('/dashboard');
+    }
+  }, [userRole, router]);
 
   useEffect(() => {
+    if (shop?._id && userRole === 'seller') getActiveSubscription(shop._id);
+  }, [shop?._id, userRole, getActiveSubscription]);
+
+  useEffect(() => {
+    if (userRole !== 'seller') return;
     api
       .listSubscriptions()
       .then(({ data }) => setSubs((data.subscriptions as unknown[]) || []))
       .catch(() => {});
-  }, []);
+  }, [userRole]);
 
   const pay = async (plan: SubscriptionPlan) => {
     if (!shop?._id) {
@@ -83,6 +94,13 @@ export default function SubscriptionsPage() {
       showToast(msg || 'Payment failed', 'error');
     }
   };
+
+  if (!userRole) {
+    return <p className="text-textLight">Loading…</p>;
+  }
+  if (userRole !== 'seller') {
+    return <p className="text-textLight">Redirecting…</p>;
+  }
 
   return (
     <>

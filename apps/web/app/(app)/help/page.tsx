@@ -8,7 +8,10 @@ import { Button } from '@/components/ui/Button';
 const faqs = [
   { q: 'How do I log in?', a: 'Use your Indian mobile number. We send a one-time password (OTP) via SMS.' },
   { q: 'How do I share my shop?', a: 'Copy your public shop URL from the dashboard or account page.' },
-  { q: 'Why do I need a subscription?', a: 'QR generation and premium features require an active plan.' },
+  {
+    q: 'Why do I need a subscription?',
+    a: 'If you run a shop as a seller, QR generation and premium features require an active plan. Buyers and admins do not use shop billing here.',
+  },
 ];
 
 export default function HelpPage() {

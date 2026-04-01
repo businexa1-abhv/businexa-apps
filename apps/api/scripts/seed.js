@@ -1,26 +1,35 @@
 #!/usr/bin/env node
 /**
- * One-off database seed: bootstrap admin (username + password / JWT).
+ * Database seed: admin users from `scripts/admins.seed.json` (JWT email + password).
  *
  * Usage (from apps/api):
- *   Set in .env: SEED_ENABLED=true, SEED_ADMIN_USERNAME=email, SEED_ADMIN_PASSWORD=strong (see @businexa/shared)
+ *   Set SEED_ENABLED=true in .env
+ *   Optional: SEED_ADMINS_PASSWORD (defaults to Harsha@1234 if unset)
  *   npm run seed
  *
- * Safe by default: does nothing unless SEED_ENABLED=true.
+ * Edits `admins.seed.json` to add/remove rows: { email, adminLevel, fullName }.
+ * Same password is applied to every listed admin (re-applied on each seed run).
  *
  * Uses same env loading as server.js (.env then .env.businexaDev | .env.businexaProd).
- * Seed the dev DB by default; for production run with BUSINEXA_ENV=businexaProd explicitly.
  */
 require('../src/config/loadEnv');
 
+const fs = require('fs');
+const path = require('path');
 const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
 const { validatePasswordStrength, isValidLoginEmail } = require('@businexa/shared');
 const { connectMongoDB, disconnectMongoDB } = require('../src/config/mongodb');
 const User = require('../src/models/User');
 const { ROLES } = require('../src/constants/roles');
+const { ADMIN_LEVELS } = require('../src/constants/adminAccess');
 
 const SALT_ROUNDS = 12;
+
+const ADMINS_JSON = path.join(__dirname, 'admins.seed.json');
+
+/** Shared dev default; override with SEED_ADMINS_PASSWORD in .env for other environments. */
+const DEFAULT_SEED_PASSWORD = 'Harsha@1234';
 
 /**
  * Non-sparse unique index on email treats every missing field as the same "null" key — only one doc
@@ -32,7 +41,7 @@ async function ensureSparseUniqueEmailIndex() {
     await coll.dropIndex('email_1');
   } catch (e) {
     const ok =
-      e.code === 26 || // NamespaceNotFound — no users collection yet
+      e.code === 26 ||
       e.code === 27 ||
       e.codeName === 'IndexNotFound' ||
       e.codeName === 'NamespaceNotFound';
@@ -51,57 +60,81 @@ async function normalizeEmptyEmails() {
   }
 }
 
-async function seedAdmin() {
-  const username = String(process.env.SEED_ADMIN_USERNAME || 'admin@businexa.local')
-    .trim()
-    .toLowerCase();
-  const password = process.env.SEED_ADMIN_PASSWORD;
+function loadAdminsConfig() {
+  if (!fs.existsSync(ADMINS_JSON)) {
+    throw new Error(`Missing ${ADMINS_JSON} — create it or copy from admins.seed.json in repo.`);
+  }
+  const raw = fs.readFileSync(ADMINS_JSON, 'utf8');
+  const data = JSON.parse(raw);
+  const list = Array.isArray(data.admins) ? data.admins : Array.isArray(data) ? data : null;
+  if (!list || list.length === 0) {
+    throw new Error('admins.seed.json must contain a non-empty "admins" array.');
+  }
+  return list;
+}
 
-  if (!password) {
-    throw new Error('Set SEED_ADMIN_PASSWORD in .env.');
-  }
-  if (!isValidLoginEmail(username)) {
-    throw new Error('SEED_ADMIN_USERNAME must be a valid email (e.g. admin@yourdomain.com).');
-  }
+async function seedAdmins() {
+  const password = String(
+    process.env.SEED_ADMINS_PASSWORD || process.env.SEED_ADMIN_PASSWORD || DEFAULT_SEED_PASSWORD
+  );
   const pw = validatePasswordStrength(password);
   if (!pw.ok) {
-    throw new Error(`SEED_ADMIN_PASSWORD: ${pw.message}`);
+    throw new Error(`SEED_ADMINS_PASSWORD: ${pw.message}`);
   }
+
+  const entries = loadAdminsConfig();
+  const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
   await ensureSparseUniqueEmailIndex();
   await normalizeEmptyEmails();
 
-  const existing = await User.findOne({ username });
+  let created = 0;
+  let updated = 0;
 
-  if (existing) {
-    if (existing.role !== ROLES.ADMIN) {
-      existing.role = ROLES.ADMIN;
-      if (!existing.adminLevel) existing.adminLevel = 'super-admin';
-      await existing.save();
-      // eslint-disable-next-line no-console
-      console.log(`[seed] Promoted existing user "${username}" to admin.`);
-      return;
+  for (const row of entries) {
+    const email = String(row.email || '')
+      .trim()
+      .toLowerCase();
+    const adminLevel = String(row.adminLevel || 'super-admin').trim();
+    const fullName = row.fullName != null ? String(row.fullName).trim() : 'Admin';
+
+    if (!isValidLoginEmail(email)) {
+      throw new Error(`Invalid email in admins.seed.json: ${row.email}`);
     }
+    if (!ADMIN_LEVELS.includes(adminLevel)) {
+      throw new Error(`Invalid adminLevel "${adminLevel}" for ${email}. Use: ${ADMIN_LEVELS.join(', ')}`);
+    }
+
+    let user = await User.findOne({ username: email });
+
+    if (!user) {
+      await User.create({
+        username: email,
+        passwordHash,
+        role: ROLES.ADMIN,
+        adminLevel,
+        isVerified: true,
+        fullName: fullName || 'Admin',
+      });
+      created += 1;
+      // eslint-disable-next-line no-console
+      console.log(`[seed] Created admin ${email} (${adminLevel})`);
+      continue;
+    }
+
+    user.role = ROLES.ADMIN;
+    user.adminLevel = adminLevel;
+    user.passwordHash = passwordHash;
+    user.isVerified = true;
+    if (fullName) user.fullName = fullName;
+    await user.save();
+    updated += 1;
     // eslint-disable-next-line no-console
-    console.log(`[seed] User "${username}" already exists as admin — skipped.`);
-    return;
+    console.log(`[seed] Updated admin ${email} (${adminLevel})`);
   }
 
-  const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-
-  const doc = {
-    username,
-    passwordHash,
-    role: ROLES.ADMIN,
-    adminLevel: 'super-admin',
-    isVerified: true,
-    fullName: String(process.env.SEED_ADMIN_FULL_NAME || 'Platform Admin').trim(),
-  };
-
-  await User.create(doc);
-
   // eslint-disable-next-line no-console
-  console.log(`[seed] Created admin user "${username}" (JWT login at POST /api/auth/login).`);
+  console.log(`[seed] Admins summary: ${created} created, ${updated} updated (${entries.length} in JSON).`);
 }
 
 async function main() {
@@ -113,7 +146,7 @@ async function main() {
 
   await connectMongoDB();
   try {
-    await seedAdmin();
+    await seedAdmins();
     const dbName = mongoose.connection.name;
     const cols = await mongoose.connection.db.listCollections().toArray();
     const names = cols.map((c) => c.name).sort();

@@ -8,9 +8,11 @@ import { useShop } from '@/hooks/useShop';
 import { useSubscription } from '@/hooks/useSubscription';
 import * as api from '@/lib/api';
 import { useNotifications } from '@/context/NotificationContext';
+import { useAuthStore } from '@/store/authStore';
 import { QRCodeBox } from '@/components/shop/QRCodeBox';
 
 export default function AccountPage() {
+  const userRole = useAuthStore((s) => s.user?.role);
   const { shop } = useShop();
   const { subscription, getActiveSubscription } = useSubscription();
   const { showToast } = useNotifications();
@@ -29,8 +31,8 @@ export default function AccountPage() {
   }, []);
 
   useEffect(() => {
-    if (shop?._id) getActiveSubscription(shop._id);
-  }, [shop?._id, getActiveSubscription]);
+    if (shop?._id && userRole === 'seller') getActiveSubscription(shop._id);
+  }, [shop?._id, userRole, getActiveSubscription]);
 
   const saveProfile = async () => {
     try {
@@ -86,22 +88,24 @@ export default function AccountPage() {
         </Card>
       ) : null}
 
-      <Card>
-        <h2 className="font-semibold text-secondary">Subscription</h2>
-        {subscription ? (
-          <p className="mt-2 text-sm text-textLight">
-            Status: {subscription.status} · Plan: {(subscription as { planType?: string }).planType || '—'}
-          </p>
-        ) : (
-          <p className="mt-2 text-sm text-textLight">No active subscription.</p>
-        )}
-        <a
-          href="/subscriptions"
-          className="mt-4 inline-flex items-center justify-center rounded-md border-2 border-primary px-4 py-2 text-sm font-medium text-primary hover:bg-primary/10"
-        >
-          Manage plans
-        </a>
-      </Card>
+      {userRole === 'seller' ? (
+        <Card>
+          <h2 className="font-semibold text-secondary">Subscription</h2>
+          {subscription ? (
+            <p className="mt-2 text-sm text-textLight">
+              Status: {subscription.status} · Plan: {(subscription as { planType?: string }).planType || '—'}
+            </p>
+          ) : (
+            <p className="mt-2 text-sm text-textLight">No active subscription.</p>
+          )}
+          <a
+            href="/subscriptions"
+            className="mt-4 inline-flex items-center justify-center rounded-md border-2 border-primary px-4 py-2 text-sm font-medium text-primary hover:bg-primary/10"
+          >
+            Manage plans
+          </a>
+        </Card>
+      ) : null}
 
       {shop?.qrCodeUrl ? (
         <Card>

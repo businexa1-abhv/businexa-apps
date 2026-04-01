@@ -1,0 +1,29 @@
+{
+  "admins": [
+    {
+      "email": "admin@gmail.com",
+      "adminLevel": "super-admin",
+      "fullName": "Platform Admin"
+    },
+    {
+      "email": "super-admin@gmail.com",
+      "adminLevel": "super-admin",
+      "fullName": "Super Admin"
+    },
+    {
+      "email": "moderator@gmail.com",
+      "adminLevel": "moderator",
+      "fullName": "Moderator"
+    },
+    {
+      "email": "analyst@gmail.com",
+      "adminLevel": "analyst",
+      "fullName": "Analyst"
+    },
+    {
+      "email": "support@gmail.com",
+      "adminLevel": "support",
+      "fullName": "Support"
+    }
+  ]
+}

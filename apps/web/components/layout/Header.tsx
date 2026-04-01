@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/store/authStore';
 import type { UserRole } from '@/types';
 
@@ -18,11 +19,11 @@ function linksForRole(role: UserRole | undefined) {
     return [
       { href: '/dashboard', label: 'Dashboard' },
       { href: '/products', label: 'Products' },
-      { href: '/subscriptions', label: 'Plans' },
       { href: '/admin', label: 'Admin' },
       ...common,
     ];
   }
+  /** Sellers: shop plans & billing — not shown for buyers or admins */
   return [
     { href: '/dashboard', label: 'Dashboard' },
     { href: '/products', label: 'Products' },
@@ -35,6 +36,7 @@ export function Header() {
   const pathname = usePathname();
   const role = useAuthStore((s) => s.user?.role);
   const links = linksForRole(role);
+  const { logout, isLoading } = useAuth();
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-surface/95 backdrop-blur">
@@ -42,7 +44,7 @@ export function Header() {
         <Link href={role === 'buyer' ? '/' : '/dashboard'} className="text-xl font-bold text-primary">
           Businexa
         </Link>
-        <nav className="hidden items-center gap-1 md:flex" aria-label="Main">
+        <nav className="hidden min-w-0 flex-1 items-center justify-center gap-1 md:flex" aria-label="Main">
           {links.map((l) => (
             <Link
               key={l.href}
@@ -58,12 +60,22 @@ export function Header() {
             </Link>
           ))}
         </nav>
-        <Link
-          href="/settings"
-          className="rounded-md border border-border px-3 py-1.5 text-sm text-text hover:bg-background"
-        >
-          Settings
-        </Link>
+        <div className="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={() => logout()}
+            disabled={isLoading}
+            className="rounded-md border border-border px-3 py-1.5 text-sm text-text hover:bg-background disabled:opacity-50"
+          >
+            {isLoading ? '…' : 'Log out'}
+          </button>
+          <Link
+            href="/settings"
+            className="rounded-md border border-border px-3 py-1.5 text-sm text-text hover:bg-background"
+          >
+            Settings
+          </Link>
+        </div>
       </div>
     </header>
   );

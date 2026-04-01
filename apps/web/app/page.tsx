@@ -52,7 +52,7 @@ export default function HomePage() {
               {[
                 { title: 'OTP login', desc: 'Secure sign-in with your mobile number.' },
                 { title: 'Product catalog', desc: 'Photos, prices, and categories in one place.' },
-                { title: 'QR & subscriptions', desc: 'Unlock QR assets and grow with simple plans.' },
+                { title: 'QR & plans (sellers)', desc: 'Shop owners pick a plan for QR assets and premium shop features.' },
               ].map((f) => (
                 <div key={f.title} className="rounded-xl border border-border p-6">
                   <h2 className="text-lg font-semibold text-secondary">{f.title}</h2>

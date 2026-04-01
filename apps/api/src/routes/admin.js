@@ -5,7 +5,12 @@ const express = require('express');
 const adminController = require('../controllers/adminController');
 const { requireAuth, requireDbUser } = require('../middleware/authMiddleware');
 const { requireAdminPermission } = require('../middleware/adminPermission');
-const { adminUpdateUserRoleBody, validateBody } = require('../middleware/validators');
+const {
+  adminUpdateUserRoleBody,
+  adminPatchUserBody,
+  adminCreateUserBody,
+  validateBody,
+} = require('../middleware/validators');
 
 const router = express.Router();
 
@@ -23,12 +28,38 @@ router.get(
   requireAdminPermission('users', 'view'),
   adminController.listUsers
 );
+router.post(
+  '/users',
+  ...auth,
+  requireAdminPermission('users', 'edit'),
+  validateBody(adminCreateUserBody),
+  adminController.createUser
+);
+router.get(
+  '/users/:userId',
+  ...auth,
+  requireAdminPermission('users', 'view'),
+  adminController.getUser
+);
+router.patch(
+  '/users/:userId',
+  ...auth,
+  requireAdminPermission('users', 'edit'),
+  validateBody(adminPatchUserBody),
+  adminController.updateUser
+);
 router.patch(
   '/users/:userId/role',
   ...auth,
   requireAdminPermission('users', 'edit'),
   validateBody(adminUpdateUserRoleBody),
   adminController.updateUserRole
+);
+router.delete(
+  '/users/:userId',
+  ...auth,
+  requireAdminPermission('users', 'delete'),
+  adminController.deleteUser
 );
 router.get(
   '/shops',

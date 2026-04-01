@@ -6,10 +6,12 @@ import { Card } from '@/components/ui/Card';
 import { useTheme } from '@/context/ThemeContext';
 import * as api from '@/lib/api';
 import { useNotifications } from '@/context/NotificationContext';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function SettingsPage() {
   const { theme, setTheme, toggle } = useTheme();
   const { showToast } = useNotifications();
+  const { logout, isLoading: authBusy } = useAuth();
   const [lang, setLang] = useState('en');
   const [notifications, setNotifications] = useState(true);
 
@@ -70,6 +72,14 @@ export default function SettingsPage() {
         </label>
       </Card>
       <Button onClick={save}>Save preferences</Button>
+
+      <Card>
+        <h2 className="font-semibold text-secondary">Session</h2>
+        <p className="mt-1 text-sm text-textLight">Sign out on this device. You can also use Log out in the header.</p>
+        <Button variant="outline" className="mt-4" onClick={() => logout()} disabled={authBusy} loading={authBusy}>
+          Log out
+        </Button>
+      </Card>
     </div>
   );
 }

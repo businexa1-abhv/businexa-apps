@@ -25,7 +25,9 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!shop?._id) return;
-    getActiveSubscription(shop._id);
+    if (userRole === 'seller') {
+      getActiveSubscription(shop._id);
+    }
     api
       .getShopMetrics(shop._id)
       .then(({ data }) => setMetrics(data.metrics))
@@ -34,7 +36,7 @@ export default function DashboardPage() {
       .listProductsByShop(shop._id, 1, 8)
       .then(({ data }) => setRecent((data.products as Product[]) || []))
       .catch(() => {});
-  }, [shop?._id, getActiveSubscription]);
+  }, [shop?._id, userRole, getActiveSubscription]);
 
   useEffect(() => {
     if (isLoading) return;
@@ -83,7 +85,8 @@ export default function DashboardPage() {
     );
   }
 
-  const activeSub = Boolean(subscription && subscription.status === 'active');
+  const activeSub =
+    userRole === 'seller' && Boolean(subscription && subscription.status === 'active');
 
   const copyUrl = () => {
     const base = typeof window !== 'undefined' ? window.location.origin : '';
@@ -117,7 +120,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {!activeSub ? (
+      {userRole === 'seller' && !activeSub ? (
         <div className="rounded-lg border border-warning/50 bg-warning/10 px-4 py-3 text-sm text-secondary">
           No active subscription — QR and premium features require a plan.{' '}
           <Link href="/subscriptions" className="font-medium text-primary underline">
