@@ -6,8 +6,33 @@
  */
 const Joi = require('joi');
 const { z } = require('zod');
-const { OTP_SIGNUP_ROLES } = require('../constants/roles');
+const {
+  validatePasswordStrength,
+  isValidLoginEmail,
+} = require('@businexa/shared');
+const { OTP_SIGNUP_ROLES, USER_ROLES } = require('../constants/roles');
 const { normalizeIndianMobile } = require('./adminPhones');
+const { otpLength } = require('../constants/otp');
+
+const loginEmailSchema = Joi.string()
+  .trim()
+  .max(320)
+  .required()
+  .custom((value, helpers) => {
+    if (!isValidLoginEmail(value)) {
+      return helpers.error('any.custom', { message: 'Enter a valid email address' });
+    }
+    return String(value).trim().toLowerCase();
+  }, 'login email');
+
+const strongPasswordSchema = Joi.string()
+  .max(128)
+  .required()
+  .custom((value, helpers) => {
+    const r = validatePasswordStrength(value);
+    if (!r.ok) return helpers.error('any.custom', { message: r.message });
+    return value;
+  }, 'strong password');
 
 /** 10-digit Indian mobile; accepts +91 / 91 / spaces so DB always matches verify lookup. */
 const mobileSchema = Joi.string()
@@ -30,10 +55,76 @@ const sendOtpBody = Joi.object({
 const verifyOtpBody = Joi.object({
   mobileNumber: mobileSchema,
   otp: Joi.string()
-    .length(6)
+    .length(otpLength())
     .pattern(/^\d+$/)
     .required(),
   role: Joi.string().valid(...OTP_SIGNUP_ROLES),
+});
+
+const profileRegisterSchema = Joi.object({
+  fullName: Joi.string().trim().max(200).allow(''),
+  mobileNumber: Joi.string()
+    .allow('', null)
+    .custom((value, helpers) => {
+      if (value === '' || value == null) return undefined;
+      const n = normalizeIndianMobile(value);
+      if (!n) return helpers.error('any.custom', { message: 'Invalid Indian mobile number' });
+      return n;
+    }),
+});
+
+const shopAtRegisterSchema = Joi.object({
+  name: Joi.string().trim().min(1).max(200).required(),
+  address: Joi.string().trim().min(1).max(500).required(),
+  category: Joi.string().trim().max(100).allow(''),
+  description: Joi.string().max(2000).allow(''),
+  whatsappNumber: Joi.alternatives().try(
+    Joi.string().pattern(/^[6-9]\d{9}$/),
+    Joi.string().allow('')
+  ),
+  email: Joi.string().email().allow('', null).max(320),
+});
+
+const registerPasswordBody = Joi.object({
+  /** Login identifier — must be a valid email (same as stored username + email). */
+  username: loginEmailSchema,
+  password: strongPasswordSchema,
+  role: Joi.string().valid(...OTP_SIGNUP_ROLES).required(),
+  profile: profileRegisterSchema.optional(),
+  shop: Joi.when('role', {
+    is: 'seller',
+    then: shopAtRegisterSchema.required(),
+    otherwise: Joi.forbidden(),
+  }),
+});
+
+const adminUpdateUserRoleBody = Joi.object({
+  role: Joi.string()
+    .valid(...USER_ROLES)
+    .required(),
+});
+
+const loginPasswordBody = Joi.object({
+  username: loginEmailSchema,
+  password: Joi.string().min(1).max(128).required(),
+});
+
+const forgotPasswordBody = Joi.object({
+  email: Joi.string().trim().max(320).optional(),
+  username: Joi.string().trim().max(320).optional(),
+})
+  .or('email', 'username')
+  .custom((value, helpers) => {
+    const raw = value.email ?? value.username;
+    if (!isValidLoginEmail(raw)) {
+      return helpers.error('any.custom', { message: 'Enter a valid email address' });
+    }
+    return { email: String(raw).trim().toLowerCase() };
+  }, 'forgot-password email');
+
+const resetPasswordBody = Joi.object({
+  token: Joi.string().min(16).max(256).required(),
+  password: strongPasswordSchema,
 });
 
 const refreshTokenBody = Joi.object({
@@ -101,6 +192,11 @@ module.exports = {
   objectIdString,
   sendOtpBody,
   verifyOtpBody,
+  registerPasswordBody,
+  adminUpdateUserRoleBody,
+  loginPasswordBody,
+  forgotPasswordBody,
+  resetPasswordBody,
   refreshTokenBody,
   createShopBody,
   createOrderBody,

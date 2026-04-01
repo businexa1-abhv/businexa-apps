@@ -1,5 +1,8 @@
 /**
- * @businexa/shared — add cross-app exports here (e.g. API types, validation schemas).
- * Add `"@businexa/shared": "0.0.0"` to apps/*/package.json dependencies using workspace protocol if needed.
+ * @businexa/shared — cross-app constants and validation (password policy, etc.).
  */
-module.exports = {};
+const passwordPolicy = require('./passwordPolicy');
+
+module.exports = {
+  ...passwordPolicy,
+};

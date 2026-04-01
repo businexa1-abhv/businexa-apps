@@ -8,6 +8,8 @@ import { OTPInput } from '@/components/ui/OTPInput';
 import { useAuth } from '@/hooks/useAuth';
 
 const RESEND_SEC = 60;
+/** Must match API `OTP_LENGTH` (default 6). Set `NEXT_PUBLIC_OTP_LENGTH` in web `.env` if you change API length. */
+const OTP_LEN = Number(process.env.NEXT_PUBLIC_OTP_LENGTH) || 6;
 
 export function OTPVerification() {
   const router = useRouter();
@@ -38,11 +40,11 @@ export function OTPVerification() {
   }, [timer]);
 
   useEffect(() => {
-    if (otp.length !== 6 || submitOnce.current || !mobile) return;
+    if (otp.length !== OTP_LEN || submitOnce.current || !mobile) return;
     submitOnce.current = true;
     void submit(otp);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [otp]);
+  }, [otp, mobile]);
 
   const submit = async (code: string) => {
     clearError();
@@ -75,7 +77,7 @@ export function OTPVerification() {
       <p className="text-center text-sm text-textLight">
         Enter the code sent to <span className="font-medium text-text">+91 {mobile}</span>
       </p>
-      <OTPInput value={otp} onChange={setOtp} error={error || undefined} />
+      <OTPInput length={OTP_LEN} value={otp} onChange={setOtp} error={error || undefined} />
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">
         <Link href="/login" className="text-sm text-secondary hover:underline">
           ← Change number
@@ -84,7 +86,13 @@ export function OTPVerification() {
           {timer > 0 ? `Resend in ${timer}s` : 'Resend OTP'}
         </Button>
       </div>
-      <Button type="button" className="w-full" loading={isLoading} onClick={() => submit(otp)} disabled={otp.length !== 6}>
+      <Button
+        type="button"
+        className="w-full"
+        loading={isLoading}
+        onClick={() => submit(otp)}
+        disabled={otp.length !== OTP_LEN}
+      >
         Verify & continue
       </Button>
     </div>

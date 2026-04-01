@@ -1,5 +1,6 @@
 import axios, { type AxiosError } from 'axios';
 import { getStoredToken, setStoredToken } from './storage';
+import type { RegisterPasswordPayload } from '@/types/api';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -35,9 +36,32 @@ export const sendOTP = (mobileNumber: string, checkUserExists?: boolean) =>
 export const verifyOTP = (mobileNumber: string, otp: string, role?: 'buyer' | 'seller') =>
   apiClient.post('/auth/verify-otp', { mobileNumber, otp, role });
 
+/** Username + password → JWT. Sellers should include `shop` + optional `profile`. */
+export const registerPassword = (payload: RegisterPasswordPayload) => apiClient.post('/auth/register', payload);
+
+export const loginPassword = (username: string, password: string) =>
+  apiClient.post('/auth/login', { username, password });
+
+export const forgotPassword = (email: string) => apiClient.post('/auth/forgot-password', { email });
+
+export const resetPassword = (token: string, password: string) =>
+  apiClient.post('/auth/reset-password', { token, password });
+
 export const getMe = () => apiClient.get('/auth/me');
 
 export const logoutApi = () => apiClient.post('/auth/logout');
+
+// —— Admin (Bearer; role admin) ——
+export const adminListUsers = (params?: { page?: number; limit?: number; role?: string }) =>
+  apiClient.get('/admin/users', { params });
+
+export const adminPatchUserRole = (userId: string, role: string) =>
+  apiClient.patch(`/admin/users/${userId}/role`, { role });
+
+export const adminListShops = (params?: { page?: number; limit?: number }) =>
+  apiClient.get('/admin/shops', { params });
+
+export const adminStats = () => apiClient.get('/admin/stats');
 
 // —— Shops ——
 export const createShop = (data: Record<string, unknown>) => apiClient.post('/shops', data);

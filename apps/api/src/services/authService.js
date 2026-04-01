@@ -13,6 +13,9 @@ const { initFirebaseAdmin } = require('../config/firebase');
 const { createOtpForMobile, verifyOtpRecord } = require('./otpService');
 const { sendOtpSms } = require('./msg91Service');
 
+const FIREBASE_CONFIG_NOT_FOUND_MSG =
+  'Firebase Auth is not active for this Firebase project (or the wrong project is targeted). Do this: (1) Firebase Console → Authentication → Get started (finish the wizard). (2) Google Cloud Console → APIs & Services → Library → enable "Identity Toolkit API" for the same project. (3) Restart the API. Confirm FIREBASE_PROJECT_ID matches the Firebase project id and your service account is from that project.';
+
 async function sendOtp(mobileNumber, checkUserExists) {
   const exists = await User.exists({ mobileNumber });
 
@@ -89,7 +92,7 @@ async function verifyOtpAndIssue(mobileNumber, otp, role = ROLES.BUYER) {
   const admin = require('firebase-admin');
 
   let user = await User.findOne({ mobileNumber });
-  const isNewUser = !user;
+  let isNewUser = !user;
 
   if (!user) {
     if (!admin.apps.length) {
@@ -105,7 +108,7 @@ async function verifyOtpAndIssue(mobileNumber, otp, role = ROLES.BUYER) {
         return {
           success: false,
           message:
-            'Firebase Authentication is not set up for this project. In Firebase Console open Authentication and click Get started, then retry. Ensure FIREBASE_PROJECT_ID / service account match the same project.',
+            'Firebase Auth is not active for this Firebase project (or the wrong project is targeted). Do this: (1) Firebase Console → Authentication → Get started (finish the wizard). (2) Google Cloud Console → APIs & Services → Library → enable "Identity Toolkit API" for the same project. (3) Restart the API. Confirm FIREBASE_PROJECT_ID matches the Firebase project id and your service account is from that project.',
         };
       }
       throw err;
@@ -114,12 +117,34 @@ async function verifyOtpAndIssue(mobileNumber, otp, role = ROLES.BUYER) {
     if (isListedAdminPhone(mobileNumber)) {
       newRole = ROLES.ADMIN;
     }
-    user = await User.create({
-      firebaseUid: firebaseUser.uid,
-      mobileNumber,
-      role: newRole,
-      isVerified: true,
-    });
+    try {
+      user = await User.create({
+        firebaseUid: firebaseUser.uid,
+        mobileNumber,
+        role: newRole,
+        isVerified: true,
+      });
+    } catch (err) {
+      const dup = err && (err.code === 11000 || err.code === 11001);
+      if (dup) {
+        const existing = await User.findOne({ mobileNumber });
+        if (existing) {
+          try {
+            await admin.auth().deleteUser(firebaseUser.uid);
+          } catch (_) {
+            /* orphan cleanup best-effort */
+          }
+          user = existing;
+          isNewUser = false;
+          user.isVerified = true;
+          await user.save();
+        } else {
+          throw err;
+        }
+      } else {
+        throw err;
+      }
+    }
   } else {
     user.isVerified = true;
     await user.save();
@@ -127,7 +152,14 @@ async function verifyOtpAndIssue(mobileNumber, otp, role = ROLES.BUYER) {
 
   let customToken = null;
   if (admin.apps.length) {
-    customToken = await admin.auth().createCustomToken(user.firebaseUid, { role: user.role });
+    try {
+      customToken = await admin.auth().createCustomToken(user.firebaseUid, { role: user.role });
+    } catch (err) {
+      if (err.code === 'auth/configuration-not-found') {
+        return { success: false, message: FIREBASE_CONFIG_NOT_FOUND_MSG };
+      }
+      throw err;
+    }
   }
 
   await AuditLog.create({

@@ -2,9 +2,28 @@ export type UserRole = 'buyer' | 'seller' | 'admin';
 
 export interface AuthUser {
   userId: string;
-  mobileNumber: string;
+  username?: string;
+  mobileNumber?: string;
+  fullName?: string;
+  email?: string;
   role: UserRole;
   isNewUser?: boolean;
+}
+
+export interface RegisterPasswordPayload {
+  /** Login id — must be a valid email (stored as username + email). */
+  username: string;
+  password: string;
+  role: 'buyer' | 'seller';
+  profile?: { fullName?: string; mobileNumber?: string };
+  shop?: {
+    name: string;
+    address: string;
+    category?: string;
+    description?: string;
+    email?: string;
+    whatsappNumber?: string;
+  };
 }
 
 export interface Shop {

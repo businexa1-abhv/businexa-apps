@@ -6,6 +6,9 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
+    "dev:prod": "cross-env BUSINEXA_ENV=businexaProd nodemon server.js",
+    "seed": "node scripts/seed.js",
+    "seed:prod": "cross-env BUSINEXA_ENV=businexaProd node scripts/seed.js",
     "test": "jest --coverage",
     "test:watch": "jest --watch",
     "format": "prettier --write \"**/*.{js,json,md}\""
@@ -23,6 +26,7 @@
   "author": "",
   "license": "UNLICENSED",
   "dependencies": {
+    "@businexa/shared": "0.0.0",
     "aws-sdk": "^2.1500.0",
     "axios": "^1.6.2",
     "bcryptjs": "^2.4.3",
@@ -47,6 +51,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "jest": "^29.7.0",
     "nodemon": "^3.0.2",
     "prettier": "^3.1.0",

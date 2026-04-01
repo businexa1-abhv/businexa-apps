@@ -6,6 +6,7 @@
  * for listed numbers (no SMS). Not for production unless ALLOW_TEST_OTP_IN_PROD=true.
  */
 const OTPVerification = require('../models/OTPVerification');
+const { otpLength } = require('../constants/otp');
 const { normalizeIndianMobile } = require('../utils/adminPhones');
 const { generateSalt, hashOtp, verifyOtpHash, randomOtpDigits } = require('../utils/cryptoUtils');
 
@@ -13,10 +14,6 @@ const OTP_EXPIRY_MS = () => (Number(process.env.OTP_EXPIRY_MINUTES) || 10) * 60 
 
 /** Max verification attempts per OTP record before it is treated as exhausted. */
 const MAX_OTP_ATTEMPTS = Number(process.env.OTP_MAX_ATTEMPTS) || 5;
-
-function otpLength() {
-  return Math.min(9, Math.max(4, Number(process.env.OTP_LENGTH) || 6));
-}
 
 function loadTestOtpMobileSet() {
   const raw = process.env.TEST_OTP_MOBILES || '';
@@ -113,7 +110,14 @@ async function verifyOtpRecord(mobileNumber, otp) {
 
   pending.attempts += 1;
 
-  const match = await verifyOtpHash(otp, pending.otpSalt, pending.otpHash);
+  const len = otpLength();
+  const otpDigits = String(otp ?? '').replace(/\D/g, '');
+  if (otpDigits.length !== len) {
+    await pending.save();
+    return { ok: false, reason: 'invalid' };
+  }
+
+  const match = await verifyOtpHash(otpDigits, pending.otpSalt, pending.otpHash);
   if (!match) {
     await pending.save();
     return { ok: false, reason: 'invalid' };

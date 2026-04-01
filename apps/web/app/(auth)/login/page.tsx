@@ -4,14 +4,14 @@ import { LoginForm } from '@/components/auth/LoginForm';
 
 export const metadata: Metadata = {
   title: 'Log in',
-  description: 'Sign in with OTP',
+  description: 'Sign in with username and password',
 };
 
 export default function LoginPage() {
   return (
     <div className="rounded-xl border border-border bg-surface p-8 shadow-sm">
       <h1 className="text-center text-2xl font-bold text-secondary">Welcome back</h1>
-      <p className="mt-2 text-center text-sm text-textLight">Enter your mobile number to receive an OTP.</p>
+      <p className="mt-2 text-center text-sm text-textLight">Use your username and password to sign in or create an account.</p>
       <div className="mt-8">
         <LoginForm />
       </div>

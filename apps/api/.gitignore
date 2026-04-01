@@ -3,6 +3,8 @@ node_modules/
 
 # Environment (never commit secrets)
 .env
+.env.businexaDev
+.env.businexaProd
 .env.local
 .env.*.local
 

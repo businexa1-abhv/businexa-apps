@@ -69,10 +69,20 @@ async function sendOtpEmail(to, otp, expiresMinutes = 10) {
   });
 }
 
+async function sendPasswordResetEmail(to, resetUrl) {
+  return sendMail({
+    to,
+    subject: 'Reset your Businexa password',
+    text: `Reset your password by opening this link (expires soon):\n${resetUrl}\n\nIf you did not request this, ignore this email.`,
+    html: `<p><a href="${resetUrl}">Reset your password</a></p><p>If you did not request this, ignore this email.</p>`,
+  });
+}
+
 module.exports = {
   sendMail,
   sendWelcomeEmail,
   sendSubscriptionConfirmation,
   sendOtpEmail,
+  sendPasswordResetEmail,
   getTransporter,
 };

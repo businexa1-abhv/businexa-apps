@@ -9,12 +9,14 @@ import { useShop } from '@/hooks/useShop';
 import { useSubscription } from '@/hooks/useSubscription';
 import * as api from '@/lib/api';
 import { useNotifications } from '@/context/NotificationContext';
+import { useAuthStore } from '@/store/authStore';
 import type { Product } from '@/types';
 import { ProductGrid } from '@/components/products/ProductGrid';
 import { QRCodeBox } from '@/components/shop/QRCodeBox';
 
 export default function DashboardPage() {
   const router = useRouter();
+  const userRole = useAuthStore((s) => s.user?.role);
   const { shop, isLoading, getShop } = useShop();
   const { subscription, getActiveSubscription } = useSubscription();
   const { showToast } = useNotifications();
@@ -35,10 +37,51 @@ export default function DashboardPage() {
   }, [shop?._id, getActiveSubscription]);
 
   useEffect(() => {
-    if (!isLoading && !shop) {
+    if (isLoading) return;
+    if (userRole === 'seller' && !shop) {
       router.replace('/business-details');
     }
-  }, [isLoading, shop, router]);
+  }, [isLoading, shop, router, userRole]);
+
+  if (userRole === 'buyer') {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold text-secondary">Welcome</h1>
+        <p className="text-textLight">
+          You are signed in as a <strong>buyer</strong>. Discover shops and products from the home page, or open your
+          account.
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href="/"
+            className="inline-flex rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+          >
+            Explore home
+          </Link>
+          <Link href="/account" className="inline-flex rounded-md border border-border px-4 py-2 text-sm hover:bg-background">
+            Account
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (userRole === 'admin' && !shop) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold text-secondary">Admin</h1>
+        <p className="text-textLight">
+          You do not have a shop linked. Use the admin area to manage users, shops, and catalog-wide product oversight.
+        </p>
+        <Link
+          href="/admin"
+          className="inline-flex rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+        >
+          Open admin panel
+        </Link>
+      </div>
+    );
+  }
 
   const activeSub = Boolean(subscription && subscription.status === 'active');
 

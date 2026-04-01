@@ -24,7 +24,7 @@ function buildPublicShopUrl(slug) {
 }
 
 async function createShop(ownerId, payload) {
-  const { name, address, category, whatsappNumber, email } = payload;
+  const { name, address, category, whatsappNumber, email, description } = payload;
   const slug = await ensureUniqueSlug(name);
   return Shop.create({
     ownerId,
@@ -32,6 +32,7 @@ async function createShop(ownerId, payload) {
     slug,
     address: address || '',
     category: category || '',
+    description: description != null ? String(description) : '',
     whatsappNumber: whatsappNumber || '',
     email: email || '',
   });

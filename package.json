@@ -10,6 +10,8 @@
     "dev:api": "npm run dev -w @businexa/api",
     "start:api": "npm run start -w @businexa/api",
     "test:api": "npm run test -w @businexa/api",
+    "seed:api": "npm run seed -w @businexa/api",
+    "seed:api:prod": "npm run seed:prod -w @businexa/api",
     "dev:web": "npm run dev -w @businexa/web",
     "build:web": "npm run build -w @businexa/web",
     "dev:mobile": "npm run start -w @businexa/mobile",

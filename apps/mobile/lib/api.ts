@@ -29,6 +29,36 @@ export const sendOTP = (mobileNumber: string, checkUserExists?: boolean) =>
 export const verifyOTP = (mobileNumber: string, otp: string, role?: 'buyer' | 'seller') =>
   apiClient.post('/auth/verify-otp', { mobileNumber, otp, role });
 
+export interface RegisterPasswordPayload {
+  username: string;
+  password: string;
+  role: 'buyer' | 'seller';
+  profile?: { fullName?: string; mobileNumber?: string };
+  shop?: {
+    name: string;
+    address: string;
+    category?: string;
+    description?: string;
+    email?: string;
+    whatsappNumber?: string;
+  };
+}
+
+export const registerPassword = (payload: RegisterPasswordPayload) =>
+  apiClient.post('/auth/register', payload);
+
+export const loginPassword = (username: string, password: string) =>
+  apiClient.post('/auth/login', { username, password });
+
+export const forgotPassword = (email: string) => apiClient.post('/auth/forgot-password', { email });
+
+export const resetPassword = (token: string, password: string) =>
+  apiClient.post('/auth/reset-password', { token, password });
+
+export const getMe = () => apiClient.get('/auth/me');
+
+export const logoutApi = () => apiClient.post('/auth/logout');
+
 export const createShop = (data: Record<string, unknown>) => apiClient.post('/shops', data);
 export const getMyShop = () => apiClient.get('/shops/my-shop');
 export const updateShop = (shopId: string, data: Record<string, unknown>) =>

@@ -1,13 +1,13 @@
 /**
- * Firebase ID token verification (JWT).
- * Uses firebase-admin `verifyIdToken`, which validates signature & expiry against Google’s JWKS
- * (equivalent to “Firebase public keys” in the security spec).
+ * Bearer token: tries API JWT (HS256) first, then Firebase ID token.
  *
  * @see NODEJS_API_GENERATION_PROMPT.md — Authentication & Security
  */
+const jwt = require('jsonwebtoken');
 const { initFirebaseAdmin } = require('../config/firebase');
 const User = require('../models/User');
 const { AppError } = require('./errorHandler');
+const { jwtSecret } = require('../services/jwtAuthService');
 
 function mapFirebaseAuthError(err) {
   const code = err.code || err.errorInfo?.code;
@@ -24,8 +24,8 @@ function mapFirebaseAuthError(err) {
 }
 
 /**
- * Requires `Authorization: Bearer <Firebase ID token>`.
- * Sets `req.user` (decoded claims) and `req.dbUser` when a User document exists.
+ * Requires `Authorization: Bearer <API JWT or Firebase ID token>`.
+ * Sets `req.user` (includes `authType`: `jwt` | `firebase`) and `req.dbUser` when a User document exists.
  */
 async function requireAuth(req, res, next) {
   try {
@@ -34,9 +34,38 @@ async function requireAuth(req, res, next) {
       throw new AppError('Unauthorized', 401, 'NO_BEARER');
     }
 
-    const idToken = header.slice(7).trim();
-    if (!idToken) {
+    const token = header.slice(7).trim();
+    if (!token) {
       throw new AppError('Unauthorized', 401, 'EMPTY_TOKEN');
+    }
+
+    const secret = jwtSecret();
+    if (secret) {
+      try {
+        const decoded = jwt.verify(token, secret, { algorithms: ['HS256'] });
+        if (decoded.typ === 'access' && decoded.sub) {
+          const dbUser = await User.findById(decoded.sub);
+          if (!dbUser) {
+            throw new AppError('User profile not found', 401, 'PROFILE_NOT_FOUND');
+          }
+          req.user = {
+            uid: dbUser.firebaseUid || String(dbUser._id),
+            authType: 'jwt',
+            role: dbUser.role,
+            sub: String(decoded.sub),
+          };
+          req.dbUser = dbUser;
+          return next();
+        }
+      } catch (e) {
+        if (e instanceof AppError) return next(e);
+        if (e.name === 'TokenExpiredError') {
+          return next(new AppError('Token expired', 401, 'TOKEN_EXPIRED'));
+        }
+        if (e.name !== 'JsonWebTokenError' && e.name !== 'NotBeforeError') {
+          return next(e);
+        }
+      }
     }
 
     initFirebaseAdmin();
@@ -46,9 +75,10 @@ async function requireAuth(req, res, next) {
     }
 
     const checkRevoked = process.env.FIREBASE_CHECK_REVOKED === 'true';
-    const decoded = await admin.auth().verifyIdToken(idToken, checkRevoked);
+    const decoded = await admin.auth().verifyIdToken(token, checkRevoked);
     req.user = {
       uid: decoded.uid,
+      authType: 'firebase',
       email: decoded.email,
       phone_number: decoded.phone_number,
       ...decoded,
@@ -90,4 +120,24 @@ function requireRole(...roles) {
   };
 }
 
-module.exports = { requireAuth, requireDbUser, optionalAuth, requireRole };
+function requireAdmin() {
+  return requireRole('admin');
+}
+
+function requireSellerOrAdmin() {
+  return requireRole('seller', 'admin');
+}
+
+function requireBuyerSellerOrAdmin() {
+  return requireRole('buyer', 'seller', 'admin');
+}
+
+module.exports = {
+  requireAuth,
+  requireDbUser,
+  optionalAuth,
+  requireRole,
+  requireAdmin,
+  requireSellerOrAdmin,
+  requireBuyerSellerOrAdmin,
+};

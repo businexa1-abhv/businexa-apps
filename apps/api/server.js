@@ -1,7 +1,7 @@
 /**
  * Process entry — loads environment, initializes app services, binds HTTP, graceful shutdown.
  */
-require('dotenv').config();
+require('./src/config/loadEnv');
 
 const http = require('http');
 const app = require('./src/app');

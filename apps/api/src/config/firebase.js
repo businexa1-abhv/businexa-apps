@@ -85,7 +85,9 @@ function readServiceAccountFromEnv() {
           'Delete this file, click "Generate new private key" in Firebase, save the new JSON, and try again.'
       );
     }
-    return { credential };
+    const projectId =
+      process.env.FIREBASE_PROJECT_ID?.trim() || serviceAccount.project_id || '';
+    return { credential, projectId };
   }
 
   const projectId = process.env.FIREBASE_PROJECT_ID?.trim();
@@ -111,7 +113,7 @@ function readServiceAccountFromEnv() {
         'Use FIREBASE_SERVICE_ACCOUNT_PATH with a fresh JSON download instead.'
     );
   }
-  return { credential };
+  return { credential, projectId };
 }
 
 function initFirebaseAdmin() {
@@ -144,6 +146,7 @@ function initFirebaseAdmin() {
   try {
     const options = {
       credential: creds.credential,
+      ...(creds.projectId && { projectId: creds.projectId }),
     };
 
     const bucket = process.env.FIREBASE_STORAGE_BUCKET;
@@ -153,7 +156,7 @@ function initFirebaseAdmin() {
 
     admin.initializeApp(options);
     initialized = true;
-    logger.info('Firebase Admin initialized');
+    logger.info('Firebase Admin initialized', { projectId: creds.projectId || options.projectId || 'from-credential' });
   } catch (err) {
     logger.error('Firebase Admin initializeApp failed', { err: err.message });
     throw new Error(`Firebase Admin failed: ${err.message}`);

@@ -23,7 +23,18 @@ async function updateProfile(req, res, next) {
   try {
     const { fullName, email, profileImage } = req.body;
     if (fullName !== undefined) req.dbUser.fullName = fullName;
-    if (email !== undefined) req.dbUser.email = email;
+    if (email !== undefined) {
+      if (req.dbUser.passwordHash) {
+        return next(
+          new AppError(
+            'Login email is tied to your password account and cannot be changed from this form.',
+            400,
+            'EMAIL_LOCKED'
+          )
+        );
+      }
+      req.dbUser.email = email;
+    }
     if (profileImage !== undefined) req.dbUser.profileImage = profileImage;
     await req.dbUser.save();
     res.json({ user: req.dbUser });
