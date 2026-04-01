@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { validatePasswordStrength, passwordRequirementsShort } from '@businexa/shared';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
+import { PasswordInput } from '@/components/ui/PasswordInput';
 import * as api from '@/lib/api';
 
 export function ResetPasswordForm() {
@@ -71,11 +71,11 @@ export function ResetPasswordForm() {
       <p className="text-xs text-textLight">{passwordRequirementsShort()}</p>
       <div>
         <label className="mb-1 block text-sm text-textLight">New password</label>
-        <Input type="password" value={password} onChange={setPassword} autoComplete="new-password" />
+        <PasswordInput value={password} onChange={setPassword} autoComplete="new-password" />
       </div>
       <div>
         <label className="mb-1 block text-sm text-textLight">Confirm password</label>
-        <Input type="password" value={confirm} onChange={setConfirm} autoComplete="new-password" />
+        <PasswordInput value={confirm} onChange={setConfirm} autoComplete="new-password" />
       </div>
       {error ? <p className="text-sm text-danger">{error}</p> : null}
       <Button

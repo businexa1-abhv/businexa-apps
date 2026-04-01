@@ -1,9 +1,10 @@
 /**
- * Admin-only: users, shops listing; role updates.
+ * Admin-only: users, shops listing; role updates; audit log listing.
  */
 const User = require('../models/User');
 const Shop = require('../models/Shop');
 const Product = require('../models/Product');
+const AuditLog = require('../models/AuditLog');
 const { USER_ROLES } = require('../constants/roles');
 
 async function listUsers({ page = 1, limit = 20, role } = {}) {
@@ -25,9 +26,16 @@ async function updateUserRole(requestingUserId, targetUserId, newRole) {
   const target = await User.findById(targetUserId);
   if (!target) return { error: 'not_found' };
 
+  const previousRole = target.role;
   target.role = newRole;
+  if (newRole !== 'admin') {
+    target.adminLevel = undefined;
+    target.adminPermissions = undefined;
+  } else if (!target.adminLevel) {
+    target.adminLevel = 'super-admin';
+  }
   await target.save();
-  return { user: target };
+  return { user: target, previousRole };
 }
 
 async function listShops({ page = 1, limit = 20 } = {}) {
@@ -54,9 +62,25 @@ async function getStats() {
   return { usersByRole, shopCount, productCount };
 }
 
+async function listAuditLogs({ page = 1, limit = 50 } = {}) {
+  const skip = (Math.max(1, page) - 1) * Math.min(100, Math.max(1, limit));
+  const take = Math.min(100, Math.max(1, limit));
+  const [logs, total] = await Promise.all([
+    AuditLog.find({})
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(take)
+      .populate('userId', 'username email fullName role adminLevel')
+      .lean(),
+    AuditLog.countDocuments({}),
+  ]);
+  return { logs, total, page: Math.max(1, page) };
+}
+
 module.exports = {
   listUsers,
   updateUserRole,
   listShops,
   getStats,
+  listAuditLogs,
 };

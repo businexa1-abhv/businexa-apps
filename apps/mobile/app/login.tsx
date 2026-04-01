@@ -14,6 +14,7 @@ import { useRouter, Link } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as api from '@/lib/api';
 import { setStoredToken } from '@/lib/storage';
+import { PasswordField } from '@/components/PasswordField';
 import { isValidLoginEmail } from '@businexa/shared';
 import { colors, spacing } from '@/styles/theme';
 
@@ -147,12 +148,11 @@ export default function LoginScreen() {
               onChangeText={setEmail}
             />
             <Text style={styles.label}>Password</Text>
-            <TextInput
-              style={styles.input}
-              secureTextEntry
+            <PasswordField
               placeholder="••••••••"
               value={password}
               onChangeText={setPassword}
+              autoCapitalize="none"
             />
             <Pressable style={[styles.btn, loading && { opacity: 0.6 }]} disabled={loading} onPress={onEmailLogin}>
               <Text style={styles.btnText}>{loading ? '…' : 'Log in'}</Text>

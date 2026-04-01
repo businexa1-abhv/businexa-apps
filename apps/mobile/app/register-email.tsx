@@ -13,6 +13,7 @@ import {
 import { Link, useRouter } from 'expo-router';
 import * as api from '@/lib/api';
 import { setStoredToken } from '@/lib/storage';
+import { PasswordField } from '@/components/PasswordField';
 import { validatePasswordStrength, isValidLoginEmail, passwordRequirementsShort } from '@businexa/shared';
 import { colors, spacing } from '@/styles/theme';
 
@@ -105,10 +106,10 @@ export default function RegisterEmailScreen() {
         />
 
         <Text style={styles.label}>Password</Text>
-        <TextInput style={styles.input} secureTextEntry value={password} onChangeText={setPassword} />
+        <PasswordField value={password} onChangeText={setPassword} autoCapitalize="none" />
 
         <Text style={styles.label}>Confirm password</Text>
-        <TextInput style={styles.input} secureTextEntry value={confirm} onChangeText={setConfirm} />
+        <PasswordField value={confirm} onChangeText={setConfirm} autoCapitalize="none" />
 
         <Text style={styles.section}>I am a</Text>
         <View style={styles.row}>

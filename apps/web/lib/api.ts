@@ -63,6 +63,12 @@ export const adminListShops = (params?: { page?: number; limit?: number }) =>
 
 export const adminStats = () => apiClient.get('/admin/stats');
 
+/** Effective admin level + permission matrix (for UI). */
+export const adminGetMe = () => apiClient.get('/admin/me');
+
+export const adminAuditLogs = (params?: { page?: number; limit?: number }) =>
+  apiClient.get('/admin/audit-logs', { params });
+
 // —— Shops ——
 export const createShop = (data: Record<string, unknown>) => apiClient.post('/shops', data);
 

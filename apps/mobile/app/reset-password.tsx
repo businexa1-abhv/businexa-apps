@@ -1,17 +1,8 @@
 import { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  Pressable,
-  StyleSheet,
-  Alert,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+import { View, Text, Pressable, StyleSheet, Alert, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import * as api from '@/lib/api';
+import { PasswordField } from '@/components/PasswordField';
 import { validatePasswordStrength, passwordRequirementsShort } from '@businexa/shared';
 import { colors, spacing } from '@/styles/theme';
 
@@ -67,19 +58,9 @@ export default function ResetPasswordScreen() {
         <Text style={styles.hint}>{passwordRequirementsShort()}</Text>
         {!token ? <Text style={styles.err}>Missing token — use the link from your email.</Text> : null}
         <Text style={styles.label}>Password</Text>
-        <TextInput
-          style={styles.input}
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
+        <PasswordField value={password} onChangeText={setPassword} autoCapitalize="none" />
         <Text style={styles.label}>Confirm</Text>
-        <TextInput
-          style={styles.input}
-          secureTextEntry
-          value={confirm}
-          onChangeText={setConfirm}
-        />
+        <PasswordField value={confirm} onChangeText={setConfirm} autoCapitalize="none" />
         <Pressable style={[styles.btn, loading && { opacity: 0.6 }]} disabled={loading} onPress={submit}>
           <Text style={styles.btnText}>{loading ? '…' : 'Update password'}</Text>
         </Pressable>

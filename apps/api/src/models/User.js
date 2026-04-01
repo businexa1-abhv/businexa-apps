@@ -63,6 +63,13 @@ const userSchema = new mongoose.Schema(
     fullName: { type: String, default: '', trim: true },
     profileImage: { type: String, default: '', trim: true },
     isVerified: { type: Boolean, default: false, index: true },
+    /** Only when role is `admin` — staff tier (RBAC within admin). */
+    adminLevel: {
+      type: String,
+      enum: ['super-admin', 'moderator', 'analyst', 'support'],
+    },
+    /** Optional overrides merged with defaults for `adminLevel` (sparse object). */
+    adminPermissions: { type: mongoose.Schema.Types.Mixed },
     preferences: {
       language: { type: String, default: 'en', trim: true },
       theme: {
@@ -100,6 +107,17 @@ userSchema.pre('validate', function syncJwtUsernameEmail(next) {
     }
     this.username = u;
     this.email = u;
+  }
+  next();
+});
+
+/** Clear admin-only fields for non-admin users; default new admins to super-admin. */
+userSchema.pre('validate', function adminRoleFields(next) {
+  if (this.role !== 'admin') {
+    this.adminLevel = undefined;
+    this.adminPermissions = undefined;
+  } else if (this.isNew && !this.adminLevel) {
+    this.adminLevel = 'super-admin';
   }
   next();
 });

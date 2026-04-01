@@ -10,6 +10,7 @@ import {
 } from '@businexa/shared';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { PasswordInput } from '@/components/ui/PasswordInput';
 import { useAuth } from '@/hooks/useAuth';
 import type { RegisterPasswordPayload } from '@/types/api';
 
@@ -129,8 +130,7 @@ export function LoginForm() {
       </div>
       <div>
         <label className="mb-1 block text-sm text-textLight">Password</label>
-        <Input
-          type="password"
+        <PasswordInput
           value={password}
           onChange={setPassword}
           autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
@@ -147,8 +147,7 @@ export function LoginForm() {
         <>
           <div>
             <label className="mb-1 block text-sm text-textLight">Confirm password</label>
-            <Input
-              type="password"
+            <PasswordInput
               value={confirmPassword}
               onChange={setConfirmPassword}
               autoComplete="new-password"

@@ -76,6 +76,7 @@ async function seedAdmin() {
   if (existing) {
     if (existing.role !== ROLES.ADMIN) {
       existing.role = ROLES.ADMIN;
+      if (!existing.adminLevel) existing.adminLevel = 'super-admin';
       await existing.save();
       // eslint-disable-next-line no-console
       console.log(`[seed] Promoted existing user "${username}" to admin.`);
@@ -92,6 +93,7 @@ async function seedAdmin() {
     username,
     passwordHash,
     role: ROLES.ADMIN,
+    adminLevel: 'super-admin',
     isVerified: true,
     fullName: String(process.env.SEED_ADMIN_FULL_NAME || 'Platform Admin').trim(),
   };

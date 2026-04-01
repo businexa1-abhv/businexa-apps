@@ -24,6 +24,8 @@ const auditLogSchema = new mongoose.Schema(
     },
     resourceId: { type: mongoose.Schema.Types.ObjectId, index: true },
     details: { type: mongoose.Schema.Types.Mixed, default: {} },
+    /** Optional before/after snapshot for admin or sensitive updates */
+    changes: { type: mongoose.Schema.Types.Mixed },
     ipAddress: { type: String, default: '', trim: true },
   },
   {

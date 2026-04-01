@@ -62,6 +62,12 @@ export default function AdminOverviewPage() {
             User roles
           </Link>
           <Link
+            href="/admin/audit-logs"
+            className="inline-flex rounded-md border border-border px-4 py-2 text-sm hover:bg-background"
+          >
+            Audit log
+          </Link>
+          <Link
             href="/admin/products"
             className="inline-flex rounded-md border border-border px-4 py-2 text-sm hover:bg-background"
           >
