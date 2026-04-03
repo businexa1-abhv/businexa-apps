@@ -22,6 +22,8 @@ const shopSchema = new mongoose.Schema(
     logoUrl: { type: String, default: '', trim: true },
     description: { type: String, default: '' },
     address: { type: String, default: '', trim: true },
+    /** Canonical business vertical (one per shop); synced with `category` for legacy clients. */
+    businessType: { type: String, default: '', trim: true, index: true },
     category: { type: String, default: '', trim: true, index: true },
     whatsappNumber: {
       type: String,
@@ -70,6 +72,20 @@ shopSchema.set('toJSON', {
 });
 shopSchema.set('toObject', { virtuals: true });
 
+shopSchema.pre('save', function shopSyncBusinessType(next) {
+  const bt = this.businessType != null ? String(this.businessType).trim() : '';
+  const cat = this.category != null ? String(this.category).trim() : '';
+  if (bt) {
+    this.businessType = bt;
+    this.category = bt;
+  } else if (cat) {
+    this.category = cat;
+    this.businessType = cat;
+  }
+  next();
+});
+
+shopSchema.index({ businessType: 1, isActive: 1 });
 shopSchema.index({ category: 1, isActive: 1 });
 shopSchema.index({ isActive: 1, subscriptionExpiresAt: 1 });
 

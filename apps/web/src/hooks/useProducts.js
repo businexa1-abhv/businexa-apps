@@ -13,12 +13,14 @@ export function useBrowseProducts() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const browse = useCallback(async (category, p = 1) => {
+  const browse = useCallback(async (businessType, p = 1, q = '') => {
     setLoading(true);
     setError(null);
     try {
       const { data } = await api.browseProducts({
-        category: category || undefined,
+        businessType: businessType || undefined,
+        category: businessType || undefined,
+        q: q.trim() || undefined,
         page: p,
         limit: 24,
       });

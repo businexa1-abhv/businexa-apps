@@ -135,12 +135,21 @@ export const adminAuditLogs = (params?: { page?: number; limit?: number }) =>
 export const getBusinessCategories = () => apiClient.get('/business-categories');
 
 /** Public shop directory */
-export const browseShops = (params?: { category?: string; page?: number; limit?: number }) =>
-  apiClient.get('/shops/browse', { params });
+export const browseShops = (params?: {
+  category?: string;
+  businessType?: string;
+  page?: number;
+  limit?: number;
+}) => apiClient.get('/shops/browse', { params });
 
 /** Visible products across active shops */
-export const browseProducts = (params?: { category?: string; page?: number; limit?: number }) =>
-  apiClient.get('/products/browse', { params });
+export const browseProducts = (params?: {
+  category?: string;
+  businessType?: string;
+  q?: string;
+  page?: number;
+  limit?: number;
+}) => apiClient.get('/products/browse', { params });
 
 // —— Shops ——
 export const createShop = (data: Record<string, unknown>) => apiClient.post('/shops', data);
@@ -165,8 +174,8 @@ export const listProductsByShop = (shopId: string, page = 1, limit = 20) =>
 
 export const getProduct = (productId: string) => apiClient.get(`/products/${productId}`);
 
-export const searchProducts = (q: string, shopId?: string) =>
-  apiClient.get('/products/search', { params: { q, shopId } });
+export const searchProducts = (q: string, shopId?: string, businessType?: string) =>
+  apiClient.get('/products/search', { params: { q, shopId, businessType } });
 
 export const createProductForm = (form: FormData) =>
   apiClient.post('/products', form, { headers: { 'Content-Type': 'multipart/form-data' } });

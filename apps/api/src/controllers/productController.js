@@ -41,20 +41,41 @@ async function createProduct(req, res, next) {
   }
 }
 
-/** GET /api/products/browse?category=&page=&limit= — visible products across active shops */
+/** True when Firestore returned nothing useful — fall back to Mongo (e.g. seed data only in Mongo). */
+function shouldFallbackProductsToMongo(fsOut) {
+  return !fsOut || !Array.isArray(fsOut.products) || fsOut.products.length === 0;
+}
+
+/** GET /api/products/browse?businessType=&category=&q=&page=&limit= — visible products across active shops */
 async function browsePublic(req, res, next) {
   try {
     const page = Math.max(1, Number(req.query.page) || 1);
     const limit = Math.min(100, Number(req.query.limit) || 24);
-    const { category } = req.query;
+    const { category, businessType, q } = req.query;
+    const needle = q != null ? String(q).trim() : '';
+
     let out = null;
     try {
-      out = await firestoreProductService.listPublicCatalog({ category, page, limit });
+      out = await firestoreProductService.listPublicCatalog({
+        category,
+        businessType,
+        q: needle || undefined,
+        page,
+        limit,
+      });
     } catch {
       out = null;
     }
-    if (!out) {
-      out = await productService.listPublicCatalog({ category, page, limit });
+    if (shouldFallbackProductsToMongo(out)) {
+      if (needle) {
+        const all = await productService.searchProducts(needle, undefined, businessType || category);
+        const skip = Math.max(0, (page - 1) * limit);
+        const total = all.length;
+        const products = all.slice(skip, skip + limit);
+        out = { products, total, page };
+      } else {
+        out = await productService.listPublicCatalog({ category, businessType, page, limit });
+      }
     }
     res.set('Cache-Control', 'public, max-age=60');
     res.json(out);
@@ -75,7 +96,7 @@ async function listByShop(req, res, next) {
     } catch {
       out = null;
     }
-    if (!out) {
+    if (shouldFallbackProductsToMongo(out)) {
       out = await productService.listByShop({ shopId, page, limit });
     }
     res.json(out);
@@ -105,7 +126,7 @@ async function myProducts(req, res, next) {
         out = null;
       }
     }
-    if (!out) {
+    if (!out || shouldFallbackProductsToMongo(out)) {
       out = await productService.listByOwner(req.dbUser._id, page, limit);
     }
     res.json({ ...out, scope: 'mine' });
@@ -184,10 +205,14 @@ async function byCategory(req, res, next) {
   }
 }
 
-/** GET /api/products/search?q=&shopId= */
+/** GET /api/products/search?q=&shopId=&businessType= */
 async function search(req, res, next) {
   try {
-    const products = await productService.searchProducts(req.query.q, req.query.shopId);
+    const products = await productService.searchProducts(
+      req.query.q,
+      req.query.shopId,
+      req.query.businessType || req.query.category
+    );
     res.json({ products });
   } catch (e) {
     next(e);

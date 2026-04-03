@@ -17,6 +17,7 @@ export function useShops() {
     setError(null);
     try {
       const { data } = await api.browseShops({
+        businessType: category || undefined,
         category: category || undefined,
         page: p,
         limit,

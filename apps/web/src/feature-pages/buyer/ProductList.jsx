@@ -12,6 +12,7 @@ export function BuyerProductList() {
   const searchParams = useSearchParams();
   const qCategory = searchParams?.get('category') || '';
   const [selected, setSelected] = useState(qCategory);
+  const [searchQ, setSearchQ] = useState('');
 
   const { categories, loading: catLoading } = useBusinessCategories();
   const { products, loading, error, browse } = useBrowseProducts();
@@ -21,18 +22,34 @@ export function BuyerProductList() {
   }, [qCategory]);
 
   useEffect(() => {
-    browse(selected, 1);
-  }, [selected, browse]);
+    browse(selected, 1, searchQ);
+  }, [selected, searchQ, browse]);
 
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-secondary">Products</h1>
-        <p className="mt-1 text-sm text-textLight">Browse listings from all shops. Use a category to narrow down.</p>
+        <p className="mt-1 text-sm text-textLight">
+          Search by name and filter by business type (shop vertical) at the same time.
+        </p>
       </div>
 
       <div>
-        <p className="mb-2 text-sm font-medium text-secondary">Category</p>
+        <label className="mb-2 block text-sm font-medium text-secondary" htmlFor="product-search">
+          Search products
+        </label>
+        <input
+          id="product-search"
+          type="search"
+          value={searchQ}
+          onChange={(e) => setSearchQ(e.target.value)}
+          placeholder="Search by product name…"
+          className="w-full max-w-md rounded-lg border border-border bg-white px-3 py-2 text-sm outline-none focus:border-primary"
+        />
+      </div>
+
+      <div>
+        <p className="mb-2 text-sm font-medium text-secondary">Business type</p>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
@@ -59,7 +76,7 @@ export function BuyerProductList() {
       </div>
 
       <Link href="/explore" className="text-sm text-primary hover:underline">
-        ← Shops by category
+        ← Shops by business type
       </Link>
 
       {error ? <p className="text-sm text-danger">{error}</p> : null}

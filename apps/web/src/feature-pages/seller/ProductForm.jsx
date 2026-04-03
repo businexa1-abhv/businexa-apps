@@ -73,12 +73,14 @@ export function SellerProductForm({ mode = 'create', productId }) {
     }
     setLoading(true);
     try {
+      const shopBt = String(shop.businessType || shop.category || '').trim();
       if (mode === 'edit' && productId) {
         await updateSellerProduct(productId, {
           name: payload.name,
           description: payload.description,
           price: priceNum,
-          category: payload.category,
+          businessType: shopBt,
+          category: String(payload.category || '').trim() || shopBt,
           inStock: payload.inStock,
           shopId: String(shop._id),
           sellerId: user.firebaseUid,
@@ -92,7 +94,8 @@ export function SellerProductForm({ mode = 'create', productId }) {
           name: payload.name,
           description: payload.description,
           price: priceNum,
-          category: payload.category,
+          businessType: shopBt,
+          category: String(payload.category || '').trim() || shopBt,
           shopId: String(shop._id),
           sellerId: user.firebaseUid,
           inStock: payload.inStock,
@@ -125,7 +128,7 @@ export function SellerProductForm({ mode = 'create', productId }) {
         initial={product}
         loading={loading}
         categoryOptions={categoryOptions.length ? categoryOptions : undefined}
-        defaultCategory={mode === 'create' ? shop?.category : undefined}
+        defaultCategory={mode === 'create' ? shop?.businessType || shop?.category : undefined}
         onSubmitFirestore={onSubmitFirestore}
       />
     </div>

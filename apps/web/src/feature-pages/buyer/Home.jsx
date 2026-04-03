@@ -27,7 +27,7 @@ export function BuyerHome() {
   const grouped = useMemo(() => {
     const map = new Map();
     for (const s of shops) {
-      const key = (s.category && String(s.category).trim()) || 'Other';
+      const key = String(s.businessType || s.category || 'Other').trim() || 'Other';
       if (!map.has(key)) map.set(key, []);
       map.get(key).push(s);
     }
@@ -61,7 +61,7 @@ export function BuyerHome() {
       </div>
 
       <div>
-        <p className="mb-2 text-sm font-medium text-secondary">Categories</p>
+        <p className="mb-2 text-sm font-medium text-secondary">Business type</p>
         <div className="-mx-1 flex gap-2 overflow-x-auto pb-2 pt-1 [scrollbar-width:thin]">
           <button
             type="button"
@@ -122,7 +122,9 @@ export function BuyerHome() {
                 className="block rounded-xl border border-border bg-surface p-4 shadow-sm transition hover:border-primary/40"
               >
                 <p className="font-semibold text-secondary">{s.name}</p>
-                {s.category ? <p className="mt-1 text-xs text-primary">{s.category}</p> : null}
+                {s.businessType || s.category ? (
+                  <p className="mt-1 text-xs text-primary">{s.businessType || s.category}</p>
+                ) : null}
                 {s.description ? <p className="mt-2 line-clamp-2 text-sm text-textLight">{s.description}</p> : null}
               </Link>
             </li>

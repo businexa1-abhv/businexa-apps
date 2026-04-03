@@ -19,13 +19,16 @@ async function createProduct(ownerId, payload, imageUrl = '') {
   if (!shop) return { error: 'no_shop' };
 
   const { name, description, price, category } = payload;
+  const shopBt = String(shop.businessType || shop.category || '').trim();
+  const cat = String(category != null ? category : '').trim() || shopBt;
   const product = await Product.create({
     shopId: shop._id,
     ownerId,
     name: name.trim(),
     description: description || '',
     price: toDecimal128(price),
-    category: category || '',
+    businessType: shopBt,
+    category: cat,
     imageUrl: imageUrl || payload.imageUrl || '',
   });
 
@@ -83,7 +86,7 @@ async function updateProduct(productId, ownerId, body, options = {}) {
   if (!product) return { error: 'not_found' };
   if (!isAdmin && String(product.ownerId) !== String(ownerId)) return { error: 'forbidden' };
 
-  const keys = ['name', 'description', 'price', 'category', 'imageUrl', 'isVisible'];
+  const keys = ['name', 'description', 'price', 'category', 'businessType', 'imageUrl', 'isVisible'];
   keys.forEach((k) => {
     if (body[k] !== undefined) {
       if (k === 'price') product[k] = toDecimal128(body[k]);
@@ -118,12 +121,14 @@ async function listByCategory(category, shopId) {
   return Product.find(filter).lean();
 }
 
-/** Visible products in active shops; optional category filter (buyer catalog). */
-async function listPublicCatalog({ category, page = 1, limit = 24 }) {
+/** Visible products in active shops; optional businessType / category filter (buyer catalog). */
+async function listPublicCatalog({ category, businessType, page = 1, limit = 24 }) {
   const activeShopIds = await Shop.find({ isActive: true }).distinct('_id');
   const filter = { isVisible: true, shopId: { $in: activeShopIds } };
-  const cat = category != null ? String(category).trim() : '';
-  if (cat) filter.category = cat;
+  const cat = String(businessType || category || '').trim();
+  if (cat) {
+    filter.$or = [{ businessType: cat }, { category: cat }];
+  }
   const skip = Math.max(0, (page - 1) * limit);
   const [products, total] = await Promise.all([
     Product.find(filter).sort({ updatedAt: -1 }).skip(skip).limit(limit).lean(),
@@ -132,10 +137,23 @@ async function listPublicCatalog({ category, page = 1, limit = 24 }) {
   return { products, total, page };
 }
 
-async function searchProducts(query, shopId) {
+async function searchProducts(query, shopId, businessType) {
   if (!query || !String(query).trim()) return [];
+  const bt = businessType != null ? String(businessType).trim() : '';
   const filter = { $text: { $search: query } };
-  if (shopId) filter.shopId = shopId;
+  if (shopId) {
+    filter.shopId = shopId;
+  } else if (bt) {
+    const shops = await Shop.find({
+      isActive: true,
+      $or: [{ businessType: bt }, { category: bt }],
+    })
+      .select('_id')
+      .lean();
+    const shopIdsInType = shops.map((s) => s._id);
+    if (!shopIdsInType.length) return [];
+    filter.shopId = { $in: shopIdsInType };
+  }
   return Product.find(filter).lean();
 }
 

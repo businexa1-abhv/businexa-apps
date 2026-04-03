@@ -20,6 +20,8 @@ const productSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.Decimal128,
       required: true,
     },
+    /** Mirrors shop business vertical for filtering (same as shop.businessType when not overridden). */
+    businessType: { type: String, default: '', trim: true, index: true },
     category: { type: String, default: '', trim: true, index: true },
     imageUrl: { type: String, default: '', trim: true },
     qrCodeUrl: { type: String, default: '', trim: true },
@@ -59,6 +61,7 @@ productSchema.set('toObject', { virtuals: true });
 
 productSchema.index({ shopId: 1, isVisible: 1 });
 productSchema.index({ shopId: 1, category: 1 });
+productSchema.index({ businessType: 1, isVisible: 1 });
 productSchema.index({ shopId: 1, createdAt: -1 });
 productSchema.index({ ownerId: 1, createdAt: -1 });
 productSchema.index({ name: 'text', description: 'text' });

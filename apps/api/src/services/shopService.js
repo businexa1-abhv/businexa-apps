@@ -8,6 +8,7 @@ const User = require('../models/User');
 const logger = require('../utils/logger');
 const { slugify } = require('../utils/validators');
 const firestoreUserService = require('./firestoreUserService');
+const firestoreShopService = require('./firestoreShopService');
 
 async function ensureUniqueSlug(base) {
   let slug = slugify(base) || 'shop';
@@ -27,24 +28,31 @@ function buildPublicShopUrl(slug) {
 }
 
 async function createShop(ownerId, payload) {
-  const { name, address, category, whatsappNumber, email, description } = payload;
+  const { name, address, whatsappNumber, email, description } = payload;
+  const bt = String(payload.businessType || payload.category || '').trim();
   const slug = await ensureUniqueSlug(name);
   const shop = await Shop.create({
     ownerId,
     name: name.trim(),
     slug,
     address: address || '',
-    category: category || '',
+    businessType: bt,
+    category: bt,
     description: description != null ? String(description) : '',
     whatsappNumber: whatsappNumber || '',
     email: email || '',
   });
   const owner = await User.findById(ownerId).select('firebaseUid');
-  if (owner?.firebaseUid && shop.category) {
+  if (owner?.firebaseUid && bt) {
     try {
-      await firestoreUserService.setBusinessType(owner.firebaseUid, shop.category);
+      await firestoreUserService.setBusinessType(owner.firebaseUid, bt);
     } catch (e) {
       logger.warn('Firestore businessType sync failed on createShop', { err: e.message });
+    }
+    try {
+      await firestoreShopService.syncShop(shop, owner.firebaseUid);
+    } catch (e) {
+      logger.warn('Firestore shop doc sync failed on createShop', { err: e.message });
     }
   }
   return shop;
@@ -69,17 +77,23 @@ async function updateShopById(shopId, ownerId, updates, options = {}) {
   const shop = await Shop.findById(shopId);
   if (!shop) return { error: 'not_found' };
   if (!isAdmin && String(shop.ownerId) !== String(ownerId)) return { error: 'forbidden' };
-  const allowed = ['name', 'description', 'address', 'whatsappNumber', 'logoUrl', 'email', 'category'];
+  const allowed = ['name', 'description', 'address', 'whatsappNumber', 'logoUrl', 'email', 'category', 'businessType'];
   allowed.forEach((k) => {
     if (updates[k] !== undefined) shop[k] = updates[k];
   });
   await shop.save();
   const owner = await User.findById(shop.ownerId).select('firebaseUid');
-  if (owner?.firebaseUid && shop.category) {
+  const bt = String(shop.businessType || shop.category || '').trim();
+  if (owner?.firebaseUid && bt) {
     try {
-      await firestoreUserService.setBusinessType(owner.firebaseUid, shop.category);
+      await firestoreUserService.setBusinessType(owner.firebaseUid, bt);
     } catch (e) {
       logger.warn('Firestore businessType sync failed on updateShop', { err: e.message });
+    }
+    try {
+      await firestoreShopService.syncShop(shop, owner.firebaseUid);
+    } catch (e) {
+      logger.warn('Firestore shop doc sync failed on updateShop', { err: e.message });
     }
   }
   return { shop };
@@ -91,7 +105,13 @@ async function deleteShopById(shopId, ownerId, options = {}) {
   if (!shop) return { error: 'not_found' };
   if (!isAdmin && String(shop.ownerId) !== String(ownerId)) return { error: 'forbidden' };
   await Product.deleteMany({ shopId: shop._id });
+  const id = shop._id;
   await shop.deleteOne();
+  try {
+    await firestoreShopService.deleteShopDoc(id);
+  } catch (e) {
+    logger.warn('Firestore shop delete failed', { err: e.message });
+  }
   return { ok: true };
 }
 
@@ -107,10 +127,13 @@ async function recalculateProductCount(shopId) {
 }
 
 /** Public directory: active shops, optional business category (Mongo string, aligns with Firestore seed labels). */
-async function listPublicShops({ category, page = 1, limit = 24 }) {
+async function listPublicShops({ category, businessType, page = 1, limit = 24 }) {
   const filter = { isActive: true };
-  const cat = category != null ? String(category).trim() : '';
-  if (cat) filter.category = cat;
+  const cat = String(businessType || category || '')
+    .trim();
+  if (cat) {
+    filter.$or = [{ businessType: cat }, { category: cat }];
+  }
   const skip = Math.max(0, (page - 1) * limit);
   const [shops, total] = await Promise.all([
     Shop.find(filter).sort({ name: 1 }).skip(skip).limit(limit).lean(),

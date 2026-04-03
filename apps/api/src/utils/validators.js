@@ -77,14 +77,17 @@ const profileRegisterSchema = Joi.object({
 const shopAtRegisterSchema = Joi.object({
   name: Joi.string().trim().min(1).max(200).required(),
   address: Joi.string().trim().min(1).max(500).required(),
-  category: Joi.string().trim().min(1).max(100).required(),
+  businessType: Joi.string().trim().min(1).max(100),
+  category: Joi.string().trim().min(1).max(100),
   description: Joi.string().max(2000).allow(''),
   whatsappNumber: Joi.alternatives().try(
     Joi.string().pattern(/^[6-9]\d{9}$/),
     Joi.string().allow('')
   ),
   email: Joi.string().email().allow('', null).max(320),
-});
+})
+  .or('businessType', 'category')
+  .messages({ 'object.missing': 'Shop businessType or category is required' });
 
 const registerPasswordBody = Joi.object({
   /** Login identifier — must be a valid email (same as stored username + email). */
@@ -172,13 +175,16 @@ const refreshTokenBody = Joi.object({
 const createShopBody = Joi.object({
   name: Joi.string().trim().min(1).max(200).required(),
   address: Joi.string().allow('', null).max(500),
-  category: Joi.string().trim().min(1).max(100).required(),
+  businessType: Joi.string().trim().min(1).max(100),
+  category: Joi.string().trim().min(1).max(100),
   whatsappNumber: Joi.alternatives().try(
     Joi.string().pattern(/^[6-9]\d{9}$/),
     Joi.string().allow('')
   ),
   email: Joi.string().email().allow('', null).max(320),
-});
+})
+  .or('businessType', 'category')
+  .messages({ 'object.missing': 'businessType or category is required' });
 
 const createOrderBody = Joi.object({
   planId: Joi.string().valid('monthly', 'quarterly', 'half_yearly', 'yearly').required(),

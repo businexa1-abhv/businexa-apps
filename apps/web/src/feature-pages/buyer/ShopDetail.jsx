@@ -72,7 +72,9 @@ export function ShopDetail({ slug, initialShop, initialProducts }) {
         ) : null}
         <section className="mt-12">
           <h2 className="mb-6 text-lg font-semibold text-secondary">Products</h2>
-          <ProductList products={(products || []).filter((p) => p.isVisible !== false)} />
+          <ProductList
+            products={(products || []).filter((p) => p.isVisible !== false && p.inStock !== false)}
+          />
         </section>
       </div>
     </div>

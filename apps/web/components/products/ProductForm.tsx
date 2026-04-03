@@ -100,7 +100,9 @@ export function ProductForm({
       <div>
         <label className="mb-1 block text-sm font-medium">Category</label>
         {!initial && defaultCategory ? (
-          <p className="mb-1 text-xs text-textLight">Defaults to your shop category; change if this product differs.</p>
+          <p className="mb-1 text-xs text-textLight">
+            Defaults to your shop&apos;s business type (e.g. Clothing). You can override for a more specific label.
+          </p>
         ) : null}
         {categoryOptions && categoryOptions.length > 0 ? (
           <select

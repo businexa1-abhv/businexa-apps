@@ -46,6 +46,8 @@ function docToProduct(id: string, data: Record<string, unknown>): FirestoreProdu
         : 0;
   const ts = data.createdAt as { toDate?: () => Date } | undefined;
   const sellerId = String(data.sellerId ?? '');
+  const biz = String(data.businessType ?? data.category ?? '');
+  const cat = String(data.category ?? data.businessType ?? '');
   return {
     id,
     _id: id,
@@ -55,7 +57,8 @@ function docToProduct(id: string, data: Record<string, unknown>): FirestoreProdu
     price: Number.isFinite(price) ? price : 0,
     priceNumber: Number.isFinite(price) ? price : 0,
     imageUrl: String(data.imageUrl ?? ''),
-    category: String(data.category ?? ''),
+    businessType: biz,
+    category: cat,
     shopId: String(data.shopId ?? ''),
     sellerId,
     inStock: data.inStock !== false,
@@ -78,6 +81,8 @@ export type SellerProductInput = {
   name: string;
   description: string;
   price: number;
+  /** Shop vertical (immutable for buyer filters). */
+  businessType: string;
   category: string;
   imageUrl: string;
   shopId: string;
@@ -99,12 +104,15 @@ export async function createSellerProduct(
     imageUrl = await uploadProductImage(input.shopId, productId, input.imageFile);
   }
 
+  const bt = String(input.businessType || '').trim();
+  const cat = String(input.category || '').trim() || bt;
   await setDoc(newRef, {
     name: input.name.trim(),
     description: input.description.trim(),
     price: input.price,
     imageUrl,
-    category: input.category.trim(),
+    businessType: bt,
+    category: cat,
     shopId: input.shopId,
     sellerId: input.sellerId,
     inStock: input.inStock,
@@ -120,6 +128,7 @@ export async function updateSellerProduct(
     name: string;
     description: string;
     price: number;
+    businessType: string;
     category: string;
     inStock: boolean;
     shopId: string;
@@ -132,11 +141,14 @@ export async function updateSellerProduct(
   if (!f) throw new Error('Firebase not configured');
   const { doc, updateDoc, serverTimestamp } = await collectionRef();
   const ref = doc(f.db, 'products', productId);
+  const bt = String(input.businessType || '').trim();
+  const cat = String(input.category || '').trim() || bt;
   const payload: Record<string, unknown> = {
     name: input.name.trim(),
     description: input.description.trim(),
     price: input.price,
-    category: input.category.trim(),
+    businessType: bt,
+    category: cat,
     inStock: input.inStock,
     updatedAt: serverTimestamp(),
   };

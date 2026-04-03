@@ -28,13 +28,13 @@ async function getMyShop(req, res, next) {
   }
 }
 
-/** GET /api/shops/browse?category=&page=&limit= — public shop directory */
+/** GET /api/shops/browse?businessType=&category=&page=&limit= — public shop directory */
 async function listPublicShops(req, res, next) {
   try {
     const page = Math.max(1, Number(req.query.page) || 1);
     const limit = Math.min(100, Number(req.query.limit) || 24);
-    const { category } = req.query;
-    const out = await shopService.listPublicShops({ category, page, limit });
+    const { category, businessType } = req.query;
+    const out = await shopService.listPublicShops({ category, businessType, page, limit });
     res.set('Cache-Control', 'public, max-age=60');
     res.json(out);
   } catch (e) {

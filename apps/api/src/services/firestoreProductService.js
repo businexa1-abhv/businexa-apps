@@ -32,6 +32,8 @@ function mapDoc(id, data) {
         ? parseFloat(priceRaw)
         : 0;
   const priceNumber = Number.isFinite(price) ? price : 0;
+  const businessType = data.businessType != null ? String(data.businessType) : '';
+  const category = data.category != null ? String(data.category) : '';
   return {
     _id: id,
     shopId: data.shopId != null ? String(data.shopId) : '',
@@ -40,7 +42,8 @@ function mapDoc(id, data) {
     description: data.description || '',
     price: priceNumber,
     priceNumber,
-    category: data.category || '',
+    businessType: businessType || category,
+    category: category || businessType,
     imageUrl: data.imageUrl || '',
     isVisible: data.inStock !== false,
     inStock: data.inStock !== false,
@@ -158,36 +161,67 @@ async function listBySeller({ sellerId, page = 1, limit = 20 }) {
 }
 
 /**
- * Public catalog: inStock products, optional category, paginated.
+ * Name/description search with optional businessType filter (in-memory; caps scan size).
+ */
+async function searchPublicCatalog({ db, businessType, needle, page, limit }) {
+  const snap = await db.collection('products').where('inStock', '==', true).limit(600).get();
+  let list = snap.docs.map((d) => mapDoc(d.id, d.data())).filter(Boolean);
+  const bt = String(businessType || '').trim();
+  if (bt) {
+    list = list.filter((p) => p.businessType === bt || p.category === bt);
+  }
+  list = list.filter(
+    (p) =>
+      p.name.toLowerCase().includes(needle) ||
+      (p.description || '').toLowerCase().includes(needle)
+  );
+  list.sort((a, b) => {
+    const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return tb - ta;
+  });
+  const total = list.length;
+  const skip = (page - 1) * limit;
+  const products = list.slice(skip, skip + limit);
+  return { products, total, page };
+}
+
+/**
+ * Public catalog: inStock products, optional businessType/category, optional name search (q), paginated.
  * @returns {Promise<{ products: object[], total: number, page: number } | null>}
  */
-async function listPublicCatalog({ category, page = 1, limit = 24 }) {
+async function listPublicCatalog({ category, businessType, q: searchQ, page = 1, limit = 24 }) {
   const db = fs();
   if (!db) return null;
 
   const lim = Math.min(100, Math.max(1, limit));
   const pageNum = Math.max(1, page);
-  const cat = category != null ? String(category).trim() : '';
+  const bt = String(businessType || category || '').trim();
+  const needle = searchQ != null ? String(searchQ).trim().toLowerCase() : '';
+
+  if (needle) {
+    return searchPublicCatalog({ db, businessType: bt, needle, page: pageNum, limit: lim });
+  }
 
   let base = db.collection('products').where('inStock', '==', true);
-  if (cat) {
-    base = base.where('category', '==', cat);
+  if (bt) {
+    base = base.where('businessType', '==', bt);
   }
-  const q = base.orderBy('createdAt', 'desc');
+  const queryRef = base.orderBy('createdAt', 'desc');
 
   if (pageNum === 1) {
-    const snap = await q.limit(lim).get();
+    const snap = await queryRef.limit(lim).get();
     const products = snap.docs.map((d) => mapDoc(d.id, d.data())).filter(Boolean);
     let total;
     try {
-      const totalSnap = await (cat
-        ? db.collection('products').where('inStock', '==', true).where('category', '==', cat).count()
+      const totalSnap = await (bt
+        ? db.collection('products').where('inStock', '==', true).where('businessType', '==', bt).count()
         : db.collection('products').where('inStock', '==', true).count()
       ).get();
       total = totalSnap.data().count;
     } catch {
-      const baseQ = cat
-        ? db.collection('products').where('inStock', '==', true).where('category', '==', cat)
+      const baseQ = bt
+        ? db.collection('products').where('inStock', '==', true).where('businessType', '==', bt)
         : db.collection('products').where('inStock', '==', true);
       const fb = await baseQ.get();
       total = fb.size;
@@ -196,19 +230,19 @@ async function listPublicCatalog({ category, page = 1, limit = 24 }) {
   }
 
   const skip = (pageNum - 1) * lim;
-  const window = await q.limit(skip + lim).get();
+  const window = await queryRef.limit(skip + lim).get();
   const all = window.docs.map((d) => mapDoc(d.id, d.data())).filter(Boolean);
   const products = all.slice(skip, skip + lim);
   let total;
   try {
-    const totalSnap = await (cat
-      ? db.collection('products').where('inStock', '==', true).where('category', '==', cat).count()
+    const totalSnap = await (bt
+      ? db.collection('products').where('inStock', '==', true).where('businessType', '==', bt).count()
       : db.collection('products').where('inStock', '==', true).count()
     ).get();
     total = totalSnap.data().count;
   } catch {
-    const baseQ = cat
-      ? db.collection('products').where('inStock', '==', true).where('category', '==', cat)
+    const baseQ = bt
+      ? db.collection('products').where('inStock', '==', true).where('businessType', '==', bt)
       : db.collection('products').where('inStock', '==', true);
     const fb = await baseQ.get();
     total = fb.size;

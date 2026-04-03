@@ -23,7 +23,9 @@ export interface RegisterPasswordPayload {
   shop?: {
     name: string;
     address: string;
-    category: string;
+    /** Preferred; `category` accepted for backward compatibility. */
+    businessType?: string;
+    category?: string;
     description?: string;
     email?: string;
     whatsappNumber?: string;
@@ -38,6 +40,8 @@ export interface Shop {
   logoUrl?: string;
   description?: string;
   address?: string;
+  /** Canonical business vertical (one per shop). */
+  businessType?: string;
   category?: string;
   whatsappNumber?: string;
   email?: string;
@@ -63,6 +67,8 @@ export interface Product {
   price?: unknown;
   priceNumber?: number;
   category?: string;
+  /** Shop vertical for buyer filters (matches shop.businessType). */
+  businessType?: string;
   imageUrl?: string;
   isVisible?: boolean;
   /** Firestore products use stock flag (also mapped from `isVisible` in API). */
