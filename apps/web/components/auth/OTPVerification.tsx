@@ -25,7 +25,7 @@ export function OTPVerification() {
     const m = sessionStorage.getItem('businexa_otp_mobile');
     const md = sessionStorage.getItem('businexa_otp_mode') as 'login' | 'signup' | null;
     if (!m) {
-      router.replace('/login');
+      router.replace('/');
       return;
     }
     setMobile(m);
@@ -48,7 +48,7 @@ export function OTPVerification() {
 
   const submit = async (code: string) => {
     clearError();
-    const roleParam = searchParams.get('role');
+    const roleParam = searchParams?.get('role');
     const role =
       roleParam === 'buyer' || roleParam === 'seller' ? roleParam : ('seller' as const);
     const res = await verifyOTP(mobile, code, role);
@@ -79,7 +79,7 @@ export function OTPVerification() {
       </p>
       <OTPInput length={OTP_LEN} value={otp} onChange={setOtp} error={error || undefined} />
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">
-        <Link href="/login" className="text-sm text-secondary hover:underline">
+        <Link href="/" className="text-sm text-secondary hover:underline">
           ← Change number
         </Link>
         <Button type="button" variant="outline" size="sm" disabled={timer > 0 || isLoading} onClick={() => resend()}>

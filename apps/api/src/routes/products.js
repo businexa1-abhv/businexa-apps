@@ -4,6 +4,7 @@
  * Public:
  *   GET /search?q=&shopId=
  *   GET /category/:category?shopId=
+ *   GET /browse?category=&page=&limit= — catalog across shops
  *   GET /?shopId=&page=&limit=
  *   GET /:productId
  *
@@ -25,6 +26,7 @@ const auth = [requireAuth, requireDbUser, requireRole('seller', 'admin')];
 
 router.get('/search', productController.search);
 router.get('/category/:category', productController.byCategory);
+router.get('/browse', productController.browsePublic);
 router.get('/my-products', ...auth, productController.myProducts);
 router.get('/', productController.listByShop);
 router.get('/:productId', productController.getById);

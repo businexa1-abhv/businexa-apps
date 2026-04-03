@@ -13,7 +13,12 @@ function linksForRole(role: UserRole | undefined) {
     { href: '/help', label: 'Help' },
   ];
   if (role === 'buyer') {
-    return [{ href: '/', label: 'Explore' }, ...common];
+    return [
+      { href: '/explore', label: 'Explore' },
+      { href: '/explore/products', label: 'Products' },
+      { href: '/scan', label: 'Scan QR' },
+      ...common,
+    ];
   }
   if (role === 'admin') {
     return [
@@ -41,7 +46,7 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-surface/95 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-        <Link href={role === 'buyer' ? '/' : '/dashboard'} className="text-xl font-bold text-primary">
+        <Link href="/dashboard" className="text-xl font-bold text-primary">
           Businexa
         </Link>
         <nav className="hidden min-w-0 flex-1 items-center justify-center gap-1 md:flex" aria-label="Main">

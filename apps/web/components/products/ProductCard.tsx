@@ -4,6 +4,7 @@ import Link from 'next/link';
 import type { Product } from '@/types';
 import { formatPrice } from '@/lib/utils';
 import { Card } from '@/components/ui/Card';
+import { RemoteImage } from '@/components/common/RemoteImage';
 
 function priceOf(p: Product) {
   if (p.priceNumber != null) return p.priceNumber;
@@ -20,8 +21,13 @@ export function ProductCard({ product }: { product: Product }) {
       <Link href={`/products/${product._id}`} className="block">
         <div className="relative aspect-square w-full bg-background">
           {product.imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={product.imageUrl} alt="" className="h-full w-full object-cover" />
+            <RemoteImage
+              src={product.imageUrl}
+              alt=""
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+            />
           ) : (
             <div className="flex h-full items-center justify-center text-textLight text-sm">No image</div>
           )}

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { AuthUser } from '@/types';
 import { setStoredToken } from '@/lib/storage';
+import { touchActivity, clearActivityTimestamp } from '@/lib/sessionIdle';
 
 interface AuthState {
   user: AuthUser | null;
@@ -17,10 +18,12 @@ export const useAuthStore = create<AuthState>()(
       setUser: (user) => set({ user }),
       setSession: (token, user) => {
         setStoredToken(token);
+        touchActivity();
         set({ user });
       },
       clearSession: () => {
         setStoredToken(null);
+        clearActivityTimestamp();
         set({ user: null });
       },
     }),

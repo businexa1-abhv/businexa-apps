@@ -9,6 +9,7 @@
     "dev:prod": "cross-env BUSINEXA_ENV=businexaProd nodemon server.js",
     "seed": "node scripts/seed.js",
     "seed:prod": "cross-env BUSINEXA_ENV=businexaProd node scripts/seed.js",
+    "seed:firestore-categories": "node scripts/seedFirestoreCategories.js",
     "test": "jest --coverage",
     "test:watch": "jest --watch",
     "format": "prettier --write \"**/*.{js,json,md}\""

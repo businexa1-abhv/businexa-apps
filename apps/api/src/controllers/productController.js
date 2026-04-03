@@ -4,6 +4,7 @@
  */
 const { AppError } = require('../middleware/errorHandler');
 const productService = require('../services/productService');
+const firestoreProductService = require('../services/firestoreProductService');
 const cloudStorage = require('../utils/cloudStorage');
 
 /**
@@ -40,13 +41,43 @@ async function createProduct(req, res, next) {
   }
 }
 
+/** GET /api/products/browse?category=&page=&limit= — visible products across active shops */
+async function browsePublic(req, res, next) {
+  try {
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(100, Number(req.query.limit) || 24);
+    const { category } = req.query;
+    let out = null;
+    try {
+      out = await firestoreProductService.listPublicCatalog({ category, page, limit });
+    } catch {
+      out = null;
+    }
+    if (!out) {
+      out = await productService.listPublicCatalog({ category, page, limit });
+    }
+    res.set('Cache-Control', 'public, max-age=60');
+    res.json(out);
+  } catch (e) {
+    next(e);
+  }
+}
+
 /** GET /api/products?shopId=&page=&limit= */
 async function listByShop(req, res, next) {
   try {
     const page = Math.max(1, Number(req.query.page) || 1);
     const limit = Math.min(100, Number(req.query.limit) || 20);
     const { shopId } = req.query;
-    const out = await productService.listByShop({ shopId, page, limit });
+    let out = null;
+    try {
+      out = await firestoreProductService.listByShop({ shopId, page, limit });
+    } catch {
+      out = null;
+    }
+    if (!out) {
+      out = await productService.listByShop({ shopId, page, limit });
+    }
     res.json(out);
   } catch (e) {
     next(e);
@@ -62,7 +93,21 @@ async function myProducts(req, res, next) {
       const out = await productService.listAllPaginated(page, limit);
       return res.json({ ...out, scope: 'all' });
     }
-    const out = await productService.listByOwner(req.dbUser._id, page, limit);
+    let out = null;
+    if (req.dbUser.firebaseUid) {
+      try {
+        out = await firestoreProductService.listBySeller({
+          sellerId: req.dbUser.firebaseUid,
+          page,
+          limit,
+        });
+      } catch {
+        out = null;
+      }
+    }
+    if (!out) {
+      out = await productService.listByOwner(req.dbUser._id, page, limit);
+    }
     res.json({ ...out, scope: 'mine' });
   } catch (e) {
     next(e);
@@ -72,7 +117,10 @@ async function myProducts(req, res, next) {
 /** GET /api/products/:productId */
 async function getById(req, res, next) {
   try {
-    const product = await productService.getProductById(req.params.productId);
+    let product = await firestoreProductService.getById(req.params.productId);
+    if (!product) {
+      product = await productService.getProductById(req.params.productId);
+    }
     if (!product) throw new AppError('Product not found', 404);
     res.json({ product });
   } catch (e) {
@@ -103,6 +151,18 @@ async function updateProduct(req, res, next) {
 async function deleteProduct(req, res, next) {
   try {
     const isAdmin = req.dbUser.role === 'admin';
+    const fsResult = await firestoreProductService.deleteProduct(req.params.productId, req.dbUser);
+    if (fsResult && fsResult.ok) {
+      return res.json({ success: true });
+    }
+    if (fsResult && fsResult.error === 'forbidden') {
+      throw new AppError('Forbidden', 403);
+    }
+    if (fsResult && fsResult.error === 'not_found') {
+      // fall through to Mongo (legacy products)
+    } else if (fsResult == null) {
+      // Firestore not configured — use Mongo
+    }
     const result = await productService.deleteProduct(req.params.productId, req.dbUser._id, {
       isAdmin,
     });
@@ -136,6 +196,7 @@ async function search(req, res, next) {
 
 module.exports = {
   createProduct,
+  browsePublic,
   listByShop,
   myProducts,
   getById,

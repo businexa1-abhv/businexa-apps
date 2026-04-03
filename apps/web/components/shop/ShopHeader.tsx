@@ -1,12 +1,12 @@
 import type { Shop } from '@/types';
+import { RemoteImage } from '@/components/common/RemoteImage';
 
 export function ShopHeader({ shop }: { shop: Shop }) {
   return (
     <div className="flex flex-col items-center gap-4 border-b border-border pb-8 text-center md:flex-row md:text-left">
       <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-background">
         {shop.logoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={shop.logoUrl} alt="" className="h-full w-full object-cover" />
+          <RemoteImage src={shop.logoUrl} alt="" width={96} height={96} className="h-full w-full object-cover" />
         ) : (
           <div className="flex h-full items-center justify-center text-textLight text-xs">Logo</div>
         )}

@@ -1,11 +1,15 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import * as api from '@/lib/api';
 import { RoleGate } from '@/components/auth/RoleGate';
-import { AdminUsersPanel } from '@/components/admin/AdminUsersPanel';
 import { Card } from '@/components/ui/Card';
+
+const AdminUsersPanel = dynamic(() =>
+  import('@/components/admin/AdminUsersPanel').then((m) => ({ default: m.AdminUsersPanel }))
+);
 
 type Stats = {
   usersByRole?: { _id: string; count: number }[];

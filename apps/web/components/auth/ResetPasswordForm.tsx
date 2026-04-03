@@ -11,7 +11,7 @@ import * as api from '@/lib/api';
 export function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const token = searchParams.get('token') || '';
+  const token = searchParams?.get('token') || '';
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -43,7 +43,7 @@ export function ResetPasswordForm() {
         return;
       }
       setDone(true);
-      setTimeout(() => router.replace('/login'), 2000);
+      setTimeout(() => router.replace('/'), 2000);
     } catch (err: unknown) {
       const msg =
         err && typeof err === 'object' && 'response' in err
@@ -87,7 +87,7 @@ export function ResetPasswordForm() {
         Update password
       </Button>
       <p className="text-center text-sm">
-        <Link href="/login" className="text-primary hover:underline">
+        <Link href="/" className="text-primary hover:underline">
           ← Back to log in
         </Link>
       </p>

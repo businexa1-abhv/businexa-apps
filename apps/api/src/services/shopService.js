@@ -4,7 +4,10 @@
  */
 const Shop = require('../models/Shop');
 const Product = require('../models/Product');
+const User = require('../models/User');
+const logger = require('../utils/logger');
 const { slugify } = require('../utils/validators');
+const firestoreUserService = require('./firestoreUserService');
 
 async function ensureUniqueSlug(base) {
   let slug = slugify(base) || 'shop';
@@ -26,7 +29,7 @@ function buildPublicShopUrl(slug) {
 async function createShop(ownerId, payload) {
   const { name, address, category, whatsappNumber, email, description } = payload;
   const slug = await ensureUniqueSlug(name);
-  return Shop.create({
+  const shop = await Shop.create({
     ownerId,
     name: name.trim(),
     slug,
@@ -36,6 +39,15 @@ async function createShop(ownerId, payload) {
     whatsappNumber: whatsappNumber || '',
     email: email || '',
   });
+  const owner = await User.findById(ownerId).select('firebaseUid');
+  if (owner?.firebaseUid && shop.category) {
+    try {
+      await firestoreUserService.setBusinessType(owner.firebaseUid, shop.category);
+    } catch (e) {
+      logger.warn('Firestore businessType sync failed on createShop', { err: e.message });
+    }
+  }
+  return shop;
 }
 
 async function findShopByOwner(ownerId) {
@@ -62,6 +74,14 @@ async function updateShopById(shopId, ownerId, updates, options = {}) {
     if (updates[k] !== undefined) shop[k] = updates[k];
   });
   await shop.save();
+  const owner = await User.findById(shop.ownerId).select('firebaseUid');
+  if (owner?.firebaseUid && shop.category) {
+    try {
+      await firestoreUserService.setBusinessType(owner.firebaseUid, shop.category);
+    } catch (e) {
+      logger.warn('Firestore businessType sync failed on updateShop', { err: e.message });
+    }
+  }
   return { shop };
 }
 
@@ -86,6 +106,19 @@ async function recalculateProductCount(shopId) {
   await Shop.updateOne({ _id: shopId }, { $set: { 'metrics.totalProducts': count } });
 }
 
+/** Public directory: active shops, optional business category (Mongo string, aligns with Firestore seed labels). */
+async function listPublicShops({ category, page = 1, limit = 24 }) {
+  const filter = { isActive: true };
+  const cat = category != null ? String(category).trim() : '';
+  if (cat) filter.category = cat;
+  const skip = Math.max(0, (page - 1) * limit);
+  const [shops, total] = await Promise.all([
+    Shop.find(filter).sort({ name: 1 }).skip(skip).limit(limit).lean(),
+    Shop.countDocuments(filter),
+  ]);
+  return { shops, total, page };
+}
+
 module.exports = {
   ensureUniqueSlug,
   buildPublicShopUrl,
@@ -97,4 +130,5 @@ module.exports = {
   deleteShopById,
   setQrCodeUrl,
   recalculateProductCount,
+  listPublicShops,
 };

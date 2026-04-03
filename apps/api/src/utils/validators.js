@@ -77,7 +77,7 @@ const profileRegisterSchema = Joi.object({
 const shopAtRegisterSchema = Joi.object({
   name: Joi.string().trim().min(1).max(200).required(),
   address: Joi.string().trim().min(1).max(500).required(),
-  category: Joi.string().trim().max(100).allow(''),
+  category: Joi.string().trim().min(1).max(100).required(),
   description: Joi.string().max(2000).allow(''),
   whatsappNumber: Joi.alternatives().try(
     Joi.string().pattern(/^[6-9]\d{9}$/),
@@ -172,7 +172,7 @@ const refreshTokenBody = Joi.object({
 const createShopBody = Joi.object({
   name: Joi.string().trim().min(1).max(200).required(),
   address: Joi.string().allow('', null).max(500),
-  category: Joi.string().allow('', null).max(100),
+  category: Joi.string().trim().min(1).max(100).required(),
   whatsappNumber: Joi.alternatives().try(
     Joi.string().pattern(/^[6-9]\d{9}$/),
     Joi.string().allow('')

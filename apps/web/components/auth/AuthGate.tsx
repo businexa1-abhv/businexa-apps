@@ -15,7 +15,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!mounted) return;
-    if (!getStoredToken()) router.replace('/login');
+    if (!getStoredToken()) router.replace('/');
   }, [mounted, router]);
 
   if (!mounted) {

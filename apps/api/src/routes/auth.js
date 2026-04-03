@@ -43,6 +43,12 @@ router.post('/reset-password', authVerifyLimiter, validateBody(resetPasswordBody
 router.post('/refresh', validateBody(refreshTokenBody), authController.refreshToken);
 
 router.get('/me', requireAuth, requireDbUser, authController.getMe);
+router.get(
+  '/firebase-custom-token',
+  requireAuth,
+  requireDbUser,
+  authController.firebaseCustomToken
+);
 router.post('/logout', requireAuth, authController.logout);
 
 module.exports = router;

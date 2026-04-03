@@ -118,6 +118,20 @@ async function listByCategory(category, shopId) {
   return Product.find(filter).lean();
 }
 
+/** Visible products in active shops; optional category filter (buyer catalog). */
+async function listPublicCatalog({ category, page = 1, limit = 24 }) {
+  const activeShopIds = await Shop.find({ isActive: true }).distinct('_id');
+  const filter = { isVisible: true, shopId: { $in: activeShopIds } };
+  const cat = category != null ? String(category).trim() : '';
+  if (cat) filter.category = cat;
+  const skip = Math.max(0, (page - 1) * limit);
+  const [products, total] = await Promise.all([
+    Product.find(filter).sort({ updatedAt: -1 }).skip(skip).limit(limit).lean(),
+    Product.countDocuments(filter),
+  ]);
+  return { products, total, page };
+}
+
 async function searchProducts(query, shopId) {
   if (!query || !String(query).trim()) return [];
   const filter = { $text: { $search: query } };
@@ -152,6 +166,7 @@ module.exports = {
   updateProduct,
   deleteProduct,
   listByCategory,
+  listPublicCatalog,
   searchProducts,
   incrementProductClicks,
   incrementProductViews,

@@ -37,6 +37,9 @@ temp/
 *-firebase-adminsdk-*.json
 **/firebase-service-account.json
 
+# Lighthouse (apps/web)
+apps/web/lighthouse-report.html
+
 # Mobile / web (common)
 .expo/
 *.jks

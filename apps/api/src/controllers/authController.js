@@ -5,8 +5,34 @@
  */
 const authService = require('../services/authService');
 const jwtAuthService = require('../services/jwtAuthService');
+const firestoreUserService = require('../services/firestoreUserService');
 const { initFirebaseAdmin } = require('../config/firebase');
 const { AppError } = require('../middleware/errorHandler');
+
+/** GET /api/auth/firebase-custom-token — JWT session → Firebase custom token (sellers; client Firestore/Storage). */
+async function firebaseCustomToken(req, res, next) {
+  try {
+    const u = req.dbUser;
+    if (!u.firebaseUid) {
+      return res.status(403).json({
+        success: false,
+        message: 'No Firebase account linked. Contact support.',
+      });
+    }
+    initFirebaseAdmin();
+    const admin = require('firebase-admin');
+    if (!admin.apps.length) {
+      return res.status(503).json({
+        success: false,
+        message: 'Firebase Admin is not configured on the server.',
+      });
+    }
+    const firebaseCustomToken = await admin.auth().createCustomToken(u.firebaseUid);
+    res.json({ success: true, firebaseCustomToken });
+  } catch (e) {
+    next(e);
+  }
+}
 
 /** POST /api/auth/send-otp */
 async function sendOtp(req, res, next) {
@@ -90,8 +116,22 @@ async function resetPassword(req, res, next) {
 }
 
 /** GET /api/auth/me — Bearer API JWT or Firebase ID token + Mongo user */
-async function getMe(req, res) {
-  res.json({ user: req.dbUser });
+async function getMe(req, res, next) {
+  try {
+    const u = req.dbUser.toJSON ? req.dbUser.toJSON() : req.dbUser;
+    let businessType;
+    if (u.role === 'seller' && u.firebaseUid) {
+      businessType = await firestoreUserService.getBusinessType(u.firebaseUid);
+    }
+    res.json({
+      user: {
+        ...u,
+        ...(businessType ? { businessType } : {}),
+      },
+    });
+  } catch (e) {
+    next(e);
+  }
 }
 
 /**
@@ -148,4 +188,5 @@ module.exports = {
   getMe,
   logout,
   refreshToken,
+  firebaseCustomToken,
 };

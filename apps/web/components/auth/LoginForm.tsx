@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { PasswordInput } from '@/components/ui/PasswordInput';
 import { useAuth } from '@/hooks/useAuth';
+import * as api from '@/lib/api';
 import type { RegisterPasswordPayload } from '@/types/api';
 
 export function LoginForm() {
@@ -34,6 +35,17 @@ export function LoginForm() {
   const [shopDescription, setShopDescription] = useState('');
   const [shopEmail, setShopEmail] = useState('');
   const [shopWhatsapp, setShopWhatsapp] = useState('');
+  const [businessCategories, setBusinessCategories] = useState<string[]>([]);
+
+  useEffect(() => {
+    api
+      .getBusinessCategories()
+      .then(({ data }) => {
+        const names = (data.categories as { name?: string }[])?.map((c) => c.name).filter(Boolean) as string[];
+        setBusinessCategories(names || []);
+      })
+      .catch(() => {});
+  }, []);
 
   const emailOk = isValidLoginEmail(email.trim());
   const pwCheck = validatePasswordStrength(password);
@@ -55,7 +67,7 @@ export function LoginForm() {
     if (!pwOk) return;
     if (password !== confirmPassword) return;
     if (accountRole === 'seller') {
-      if (!shopName.trim() || !shopAddress.trim()) return;
+      if (!shopName.trim() || !shopAddress.trim() || !shopCategory.trim()) return;
     }
 
     const digits = mobile.replace(/\D/g, '');
@@ -84,11 +96,7 @@ export function LoginForm() {
     const res = await registerWithPassword(payload);
     if (!res.success) return;
 
-    if (accountRole === 'buyer') {
-      router.replace('/');
-    } else {
-      router.replace('/dashboard');
-    }
+    router.replace('/dashboard');
   };
 
   const canSubmitLogin = emailOk && password.length >= 1;
@@ -96,7 +104,8 @@ export function LoginForm() {
     emailOk &&
     pwOk &&
     password === confirmPassword &&
-    (accountRole === 'buyer' || (shopName.trim().length > 0 && shopAddress.trim().length > 0));
+    (accountRole === 'buyer' ||
+      (shopName.trim().length > 0 && shopAddress.trim().length > 0 && shopCategory.trim().length > 0));
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
@@ -219,8 +228,24 @@ export function LoginForm() {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs text-textLight">Category (optional)</label>
-                  <Input type="text" value={shopCategory} onChange={setShopCategory} placeholder="e.g. Grocery" />
+                  <label className="mb-1 block text-xs text-textLight">Business type *</label>
+                  {businessCategories.length > 0 ? (
+                    <select
+                      value={shopCategory}
+                      onChange={(e) => setShopCategory(e.target.value)}
+                      className="w-full rounded-md border border-border bg-white px-3 py-2 text-sm outline-none focus:border-primary"
+                      required
+                    >
+                      <option value="">Select category</option>
+                      {businessCategories.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <Input type="text" value={shopCategory} onChange={setShopCategory} placeholder="e.g. Grocery" />
+                  )}
                 </div>
                 <div>
                   <label className="mb-1 block text-xs text-textLight">Description (optional)</label>

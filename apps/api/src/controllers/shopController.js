@@ -6,6 +6,7 @@ const { AppError } = require('../middleware/errorHandler');
 const { assertShopOwnerOrAdmin } = require('../utils/authorization');
 const shopService = require('../services/shopService');
 const qrService = require('../services/qrService');
+const firestoreProductService = require('../services/firestoreProductService');
 
 /** POST /api/shops — create */
 async function createShop(req, res, next) {
@@ -22,6 +23,20 @@ async function getMyShop(req, res, next) {
   try {
     const shop = await shopService.findShopByOwner(req.dbUser._id);
     res.json({ shop: shop || null });
+  } catch (e) {
+    next(e);
+  }
+}
+
+/** GET /api/shops/browse?category=&page=&limit= — public shop directory */
+async function listPublicShops(req, res, next) {
+  try {
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(100, Number(req.query.limit) || 24);
+    const { category } = req.query;
+    const out = await shopService.listPublicShops({ category, page, limit });
+    res.set('Cache-Control', 'public, max-age=60');
+    res.json(out);
   } catch (e) {
     next(e);
   }
@@ -90,11 +105,16 @@ async function getMetrics(req, res, next) {
   try {
     const shop = await shopService.findShopById(req.params.shopId);
     assertShopOwnerOrAdmin(req, shop);
+    let totalProducts = shop.metrics?.totalProducts ?? 0;
+    const fsCount = await firestoreProductService.countByShopId(String(shop._id));
+    if (fsCount != null) {
+      totalProducts = fsCount;
+    }
     res.json({
       metrics: {
         qrScans: shop.metrics?.qrScans ?? 0,
         views: shop.metrics?.views ?? 0,
-        totalProducts: shop.metrics?.totalProducts ?? 0,
+        totalProducts,
       },
     });
   } catch (e) {
@@ -105,6 +125,7 @@ async function getMetrics(req, res, next) {
 module.exports = {
   createShop,
   getMyShop,
+  listPublicShops,
   getShopByIdOrSlug,
   updateShop,
   deleteShop,

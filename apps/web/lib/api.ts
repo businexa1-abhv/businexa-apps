@@ -1,5 +1,6 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { getStoredToken, setStoredToken } from './storage';
+import { clearActivityTimestamp } from './sessionIdle';
 import { getApiLoadingStore } from './apiLoadingStore';
 import type { RegisterPasswordPayload } from '@/types/api';
 
@@ -49,6 +50,7 @@ apiClient.interceptors.response.use(
     }
     if (err.response?.status === 401 && typeof window !== 'undefined') {
       setStoredToken(null);
+      clearActivityTimestamp();
       window.dispatchEvent(new CustomEvent('businexa:auth-expired'));
     }
     return Promise.reject(err);
@@ -58,7 +60,7 @@ apiClient.interceptors.response.use(
 /** Pass as axios config to skip the global overlay for that call (e.g. silent refresh). */
 export const skipGlobalLoaderConfig = {
   headers: { [SKIP_LOADER_HEADER]: 'true' },
-} as const;
+} as unknown as InternalAxiosRequestConfig;
 
 // —— Auth ——
 export const sendOTP = (mobileNumber: string, checkUserExists?: boolean) =>
@@ -78,7 +80,11 @@ export const forgotPassword = (email: string) => apiClient.post('/auth/forgot-pa
 export const resetPassword = (token: string, password: string) =>
   apiClient.post('/auth/reset-password', { token, password });
 
-export const getMe = () => apiClient.get('/auth/me');
+export const getMe = (config?: InternalAxiosRequestConfig) => apiClient.get('/auth/me', config);
+
+/** JWT sellers: obtain Firebase custom token for client Firestore/Storage (requires linked `firebaseUid`). */
+export const getFirebaseCustomToken = (config?: InternalAxiosRequestConfig) =>
+  apiClient.get('/auth/firebase-custom-token', config);
 
 export const logoutApi = () => apiClient.post('/auth/logout');
 
@@ -124,6 +130,17 @@ export const adminGetMe = () => apiClient.get('/admin/me');
 
 export const adminAuditLogs = (params?: { page?: number; limit?: number }) =>
   apiClient.get('/admin/audit-logs', { params });
+
+// —— Business categories (Firestore-backed list + fallback) ——
+export const getBusinessCategories = () => apiClient.get('/business-categories');
+
+/** Public shop directory */
+export const browseShops = (params?: { category?: string; page?: number; limit?: number }) =>
+  apiClient.get('/shops/browse', { params });
+
+/** Visible products across active shops */
+export const browseProducts = (params?: { category?: string; page?: number; limit?: number }) =>
+  apiClient.get('/products/browse', { params });
 
 // —— Shops ——
 export const createShop = (data: Record<string, unknown>) => apiClient.post('/shops', data);

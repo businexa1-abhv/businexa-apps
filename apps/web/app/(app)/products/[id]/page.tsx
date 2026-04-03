@@ -9,6 +9,7 @@ import { useProducts } from '@/hooks/useProducts';
 import { formatPrice } from '@/lib/utils';
 import type { Product } from '@/types';
 import { useNotifications } from '@/context/NotificationContext';
+import { RemoteImage } from '@/components/common/RemoteImage';
 
 function priceOf(p: Product) {
   if (p.priceNumber != null) return p.priceNumber;
@@ -18,7 +19,7 @@ function priceOf(p: Product) {
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const id = String(params.id);
+  const id = params?.id != null ? String(params.id) : '';
   const { getProductById, deleteProduct, isLoading } = useProducts();
   const { showToast } = useNotifications();
   const [product, setProduct] = useState<Product | null>(null);
@@ -68,10 +69,16 @@ export default function ProductDetailPage() {
         </Button>
       </div>
       <div className="grid gap-8 md:grid-cols-2">
-        <div className="aspect-square overflow-hidden rounded-xl bg-background">
+        <div className="relative aspect-square overflow-hidden rounded-xl bg-background">
           {product.imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={product.imageUrl} alt="" className="h-full w-full object-cover" />
+            <RemoteImage
+              src={product.imageUrl}
+              alt=""
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 50vw"
+              priority
+            />
           ) : (
             <div className="flex h-full items-center justify-center text-textLight">No image</div>
           )}

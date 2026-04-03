@@ -27,12 +27,14 @@ export function useAuth() {
       const u = data.user as Record<string, unknown>;
       setUser({
         userId: String(u._id ?? ''),
+        firebaseUid: typeof u.firebaseUid === 'string' ? u.firebaseUid : undefined,
         username: typeof u.username === 'string' ? u.username : undefined,
         mobileNumber: typeof u.mobileNumber === 'string' ? u.mobileNumber : undefined,
         fullName: typeof u.fullName === 'string' ? u.fullName : undefined,
         email: typeof u.email === 'string' ? u.email : undefined,
         role: u.role as AuthUser['role'],
         isNewUser: false,
+        businessType: typeof u.businessType === 'string' ? u.businessType : undefined,
       });
     } catch {
       clearSession();
@@ -42,7 +44,7 @@ export function useAuth() {
   useEffect(() => {
     const onExpired = () => {
       clearSession();
-      router.replace('/login');
+      router.replace('/');
     };
     window.addEventListener('businexa:auth-expired', onExpired);
     return () => window.removeEventListener('businexa:auth-expired', onExpired);
@@ -127,16 +129,21 @@ export function useAuth() {
             mobileNumber?: string;
             fullName?: string;
             role: AuthUser['role'];
+            firebaseUid?: string;
           };
         }).user;
         setSession(token, {
           userId: u.userId,
+          firebaseUid: u.firebaseUid,
           username: u.username,
           email: u.email,
           mobileNumber: u.mobileNumber,
           fullName: u.fullName,
           role: u.role,
           isNewUser: false,
+          businessType: 'businessType' in u && typeof (u as { businessType?: string }).businessType === 'string'
+            ? (u as { businessType?: string }).businessType
+            : undefined,
         });
         return { success: true as const };
       } catch (e: unknown) {
@@ -173,17 +180,22 @@ export function useAuth() {
             email?: string;
             role: AuthUser['role'];
             isNewUser?: boolean;
+            firebaseUid?: string;
           };
           shop?: unknown;
         }).user;
         setSession(token, {
           userId: u.userId,
+          firebaseUid: u.firebaseUid,
           username: u.username,
           mobileNumber: u.mobileNumber,
           fullName: u.fullName,
           email: u.email,
           role: u.role,
           isNewUser: u.isNewUser ?? true,
+          businessType: 'businessType' in u && typeof (u as { businessType?: string }).businessType === 'string'
+            ? (u as { businessType?: string }).businessType
+            : undefined,
         });
         return { success: true as const, isNewUser: Boolean(u.isNewUser) };
       } catch (e: unknown) {
@@ -208,7 +220,7 @@ export function useAuth() {
     } finally {
       clearSession();
       setIsLoading(false);
-      router.replace('/login');
+      router.replace('/');
     }
   }, [clearSession, router]);
 

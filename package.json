@@ -11,9 +11,11 @@
     "start:api": "npm run start -w @businexa/api",
     "test:api": "npm run test -w @businexa/api",
     "seed:api": "npm run seed -w @businexa/api",
+    "seed:firestore-categories": "npm run seed:firestore-categories -w @businexa/api",
     "seed:api:prod": "npm run seed:prod -w @businexa/api",
     "dev:web": "npm run dev -w @businexa/web",
     "build:web": "npm run build -w @businexa/web",
+    "perf:web:lighthouse": "npm run perf:lighthouse -w @businexa/web",
     "dev:mobile": "npm run start -w @businexa/mobile",
     "format": "npm run format -w @businexa/api"
   },

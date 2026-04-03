@@ -52,7 +52,7 @@ export function ForgotPasswordForm() {
             <span className="font-medium text-textLight">Development link:</span> {devLink}
           </p>
         ) : null}
-        <Link href="/login" className="inline-block text-primary hover:underline">
+        <Link href="/" className="inline-block text-primary hover:underline">
           ← Back to log in
         </Link>
       </div>
@@ -74,7 +74,7 @@ export function ForgotPasswordForm() {
         Send reset link
       </Button>
       <p className="text-center text-sm">
-        <Link href="/login" className="text-primary hover:underline">
+        <Link href="/" className="text-primary hover:underline">
           ← Back to log in
         </Link>
       </p>

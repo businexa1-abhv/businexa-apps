@@ -1,3 +1,4 @@
+/** API JWT (Bearer) persisted for SPA auth — survives refresh until logout or expiry handling. */
 const TOKEN_KEY = 'businexa_id_token';
 
 export function getStoredToken(): string | null {

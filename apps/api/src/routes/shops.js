@@ -10,6 +10,7 @@
  *   DELETE /:shopId
  *
  * Public:
+ *   GET /browse?category=&page=&limit= — directory of active shops
  *   GET /:shopIdOrSlug — by ObjectId or slug (Cache-Control: 1h in controller)
  */
 const express = require('express');
@@ -22,6 +23,8 @@ const router = express.Router();
 const auth = [requireAuth, requireDbUser, requireRole('seller', 'admin')];
 
 router.get('/my-shop', ...auth, shopController.getMyShop);
+
+router.get('/browse', shopController.listPublicShops);
 
 router.get('/:shopId/metrics', ...auth, shopController.getMetrics);
 router.post('/:shopId/generate-qr', ...auth, shopController.generateQr);

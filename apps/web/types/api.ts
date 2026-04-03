@@ -2,12 +2,16 @@ export type UserRole = 'buyer' | 'seller' | 'admin';
 
 export interface AuthUser {
   userId: string;
+  /** Firebase Auth uid — sellers need this for Firestore `products` and Storage. */
+  firebaseUid?: string;
   username?: string;
   mobileNumber?: string;
   fullName?: string;
   email?: string;
   role: UserRole;
   isNewUser?: boolean;
+  /** Seller: from Firestore `users/{uid}.businessType` (via GET /auth/me). */
+  businessType?: string;
 }
 
 export interface RegisterPasswordPayload {
@@ -19,7 +23,7 @@ export interface RegisterPasswordPayload {
   shop?: {
     name: string;
     address: string;
-    category?: string;
+    category: string;
     description?: string;
     email?: string;
     whatsappNumber?: string;
@@ -61,9 +65,19 @@ export interface Product {
   category?: string;
   imageUrl?: string;
   isVisible?: boolean;
+  /** Firestore products use stock flag (also mapped from `isVisible` in API). */
+  inStock?: boolean;
+  /** Firestore `sellerId` (Firebase uid), distinct from Mongo `ownerId` when both exist. */
+  sellerId?: string;
   createdAt?: string;
   updatedAt?: string;
 }
+
+/** Normalized Firestore product document (`products/{id}`). */
+export type FirestoreProduct = Product & {
+  id: string;
+  inStock: boolean;
+};
 
 export interface SubscriptionPlan {
   id: 'monthly' | 'quarterly' | 'half_yearly' | 'yearly';

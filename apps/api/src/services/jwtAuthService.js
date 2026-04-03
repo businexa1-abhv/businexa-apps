@@ -9,6 +9,7 @@ const User = require('../models/User');
 const { ROLES, OTP_SIGNUP_ROLES } = require('../constants/roles');
 const { sendPasswordResetEmail } = require('./emailService');
 const shopService = require('./shopService');
+const firestoreUserService = require('./firestoreUserService');
 const { normalizeIndianMobile } = require('../utils/adminPhones');
 const logger = require('../utils/logger');
 
@@ -88,11 +89,34 @@ async function registerWithPassword(username, password, role, options = {}) {
   if (r === ROLES.SELLER && !shopPayload) {
     return { success: false, message: 'Shop name and address are required for seller registration.' };
   }
+  if (r === ROLES.SELLER && shopPayload) {
+    const cat = String(shopPayload.category || '').trim();
+    if (!cat) {
+      return { success: false, message: 'Business category is required for seller registration.' };
+    }
+  }
+
+  let firebaseUidForSeller = null;
+  if (r === ROLES.SELLER) {
+    const fu = await firestoreUserService.ensureFirebaseAuthUserByEmail(u);
+    if (!fu) {
+      return {
+        success: false,
+        message:
+          'Seller registration requires Firebase Admin. Set FIREBASE_SERVICE_ACCOUNT_PATH or FIREBASE_* in .env.',
+      };
+    }
+    firebaseUidForSeller = fu.uid;
+    userFields.firebaseUid = fu.uid;
+  }
 
   let user;
   try {
     user = await User.create(userFields);
   } catch (err) {
+    if (firebaseUidForSeller) {
+      await firestoreUserService.deleteFirebaseAuthUser(firebaseUidForSeller);
+    }
     if (err && (err.code === 11000 || err.code === 11001)) {
       return { success: false, message: 'Username or mobile already registered' };
     }
@@ -112,6 +136,9 @@ async function registerWithPassword(username, password, role, options = {}) {
       });
     } catch (err) {
       await User.deleteOne({ _id: user._id });
+      if (firebaseUidForSeller) {
+        await firestoreUserService.deleteFirebaseAuthUser(firebaseUidForSeller);
+      }
       logger.error('registerWithPassword: shop create failed', { err: err.message });
       return { success: false, message: err.message || 'Could not create shop. Try again.' };
     }
@@ -119,6 +146,10 @@ async function registerWithPassword(username, password, role, options = {}) {
 
   const token = signAccessToken(user._id.toString(), user.role);
   const mail = String(user.email || user.username || '').trim();
+  let businessType;
+  if (user.role === ROLES.SELLER && user.firebaseUid) {
+    businessType = await firestoreUserService.getBusinessType(user.firebaseUid);
+  }
   return {
     success: true,
     token,
@@ -131,6 +162,8 @@ async function registerWithPassword(username, password, role, options = {}) {
       fullName: user.fullName || '',
       role: user.role,
       isNewUser: true,
+      ...(user.firebaseUid ? { firebaseUid: user.firebaseUid } : {}),
+      ...(businessType ? { businessType } : {}),
     },
     ...(shopDoc && { shop: shopDoc.toJSON ? shopDoc.toJSON() : shopDoc }),
   };
@@ -157,6 +190,10 @@ async function loginWithPassword(username, password) {
   }
   const token = signAccessToken(user._id.toString(), user.role);
   const mail = (user.email || user.username || '').trim();
+  let businessType;
+  if (user.role === ROLES.SELLER && user.firebaseUid) {
+    businessType = await firestoreUserService.getBusinessType(user.firebaseUid);
+  }
   return {
     success: true,
     token,
@@ -169,6 +206,8 @@ async function loginWithPassword(username, password) {
       fullName: user.fullName || '',
       role: user.role,
       isNewUser: false,
+      ...(user.firebaseUid ? { firebaseUid: user.firebaseUid } : {}),
+      ...(businessType ? { businessType } : {}),
     },
   };
 }

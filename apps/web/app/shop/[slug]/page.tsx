@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ShopHeader } from '@/components/shop/ShopHeader';
-import { ProductList } from '@/components/shop/ProductList';
+import { ShopDetail } from '@src/pages/buyer/ShopDetail';
 import type { Product, Shop } from '@/types';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
@@ -64,29 +63,6 @@ export default async function PublicShopPage({ params }: { params: { slug: strin
   }
 
   const products = await loadProducts(String(shop._id));
-  const wa = shop.whatsappNumber ? `https://wa.me/91${shop.whatsappNumber.replace(/\D/g, '')}` : null;
 
-  return (
-    <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-5xl px-4 py-10">
-        <ShopHeader shop={shop} />
-        {wa ? (
-          <div className="mt-6 flex justify-center">
-            <a
-              href={wa}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex rounded-full bg-[#25D366] px-6 py-3 text-sm font-semibold text-white hover:opacity-90"
-            >
-              Chat on WhatsApp
-            </a>
-          </div>
-        ) : null}
-        <section className="mt-12">
-          <h2 className="mb-6 text-lg font-semibold text-secondary">Products</h2>
-          <ProductList products={products.filter((p) => p.isVisible !== false)} />
-        </section>
-      </div>
-    </div>
-  );
+  return <ShopDetail slug={params.slug} initialShop={shop} initialProducts={products} />;
 }
