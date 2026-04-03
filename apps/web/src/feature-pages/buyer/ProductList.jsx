@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ProductCard } from '@/components/products/ProductCard';
+import { BuyerCatalogGate } from '@/components/buyer/BuyerCatalogGate';
 import { useBusinessCategories } from '@src/hooks/useShops';
 import { useBrowseProducts } from '@src/hooks/useProducts';
 
@@ -15,7 +16,7 @@ export function BuyerProductList() {
   const [searchQ, setSearchQ] = useState('');
 
   const { categories, loading: catLoading } = useBusinessCategories();
-  const { products, loading, error, browse } = useBrowseProducts();
+  const { products, loading, error, browse, buyerPreview } = useBrowseProducts();
 
   useEffect(() => {
     setSelected(qCategory);
@@ -79,6 +80,12 @@ export function BuyerProductList() {
         ← Shops by business type
       </Link>
 
+      {buyerPreview ? (
+        <div className="mt-6">
+          <BuyerCatalogGate variant="products" />
+        </div>
+      ) : null}
+
       {error ? <p className="text-sm text-danger">{error}</p> : null}
 
       {loading ? (
@@ -91,7 +98,7 @@ export function BuyerProductList() {
         </div>
       )}
 
-      {!loading && products.length === 0 ? (
+      {!loading && products.length === 0 && !buyerPreview ? (
         <p className="text-sm text-textLight">No visible products for this filter.</p>
       ) : null}
     </div>

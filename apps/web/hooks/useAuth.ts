@@ -6,7 +6,7 @@ import { useAuthStore } from '@/store/authStore';
 import { getStoredToken } from '@/lib/storage';
 import * as api from '@/lib/api';
 import { signInWithCustomTokenFromApi, signOutFirebase } from '@/lib/auth';
-import type { AuthUser, RegisterPasswordPayload } from '@/types';
+import type { AuthUser, BuyerAccess, RegisterPasswordPayload } from '@/types';
 
 export function useAuth() {
   const router = useRouter();
@@ -25,6 +25,7 @@ export function useAuth() {
     try {
       const { data } = await api.getMe();
       const u = data.user as Record<string, unknown>;
+      const buyerAccess = (data as { buyerAccess?: BuyerAccess }).buyerAccess;
       setUser({
         userId: String(u._id ?? ''),
         firebaseUid: typeof u.firebaseUid === 'string' ? u.firebaseUid : undefined,
@@ -35,6 +36,7 @@ export function useAuth() {
         role: u.role as AuthUser['role'],
         isNewUser: false,
         businessType: typeof u.businessType === 'string' ? u.businessType : undefined,
+        buyerAccess: u.role === 'buyer' && buyerAccess ? buyerAccess : undefined,
       });
     } catch {
       clearSession();

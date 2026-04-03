@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { categoryChipEmoji } from '@/lib/businessCategoryUi';
+import { useAuthStore } from '@/store/authStore';
 import { useBusinessCategories, useShops } from '@src/hooks/useShops';
 
 function slugifyCategory(name) {
@@ -16,6 +17,12 @@ function slugifyCategory(name) {
  * Buyer explore: horizontal category chips (filter) or "All" grouped directory.
  */
 export function BuyerHome() {
+  const role = useAuthStore((s) => s.user?.role);
+  const buyerAccess = useAuthStore((s) => s.user?.buyerAccess);
+  const canScan =
+    role !== 'buyer' || !buyerAccess || buyerAccess.canAccessPremium === true;
+  const scanHref = canScan ? '/scan' : '/membership';
+  const scanLabel = canScan ? 'Scan QR' : 'Unlock QR (Plus)';
   const { categories, loading: catLoading } = useBusinessCategories();
   const { shops, total, loading, error, browseShops } = useShops();
   const [filterCategory, setFilterCategory] = useState('');
@@ -53,10 +60,10 @@ export function BuyerHome() {
         <h1 className="text-2xl font-bold text-secondary">Explore shops</h1>
         <p className="mt-1 text-sm text-textLight">Pick a category or scan a shop QR to open it directly.</p>
         <Link
-          href="/scan"
-          className="mt-5 flex w-full items-center justify-center rounded-xl bg-primary px-6 py-4 text-base font-semibold text-white shadow-md transition hover:opacity-95 sm:w-auto sm:min-w-[220px]"
+          href={scanHref}
+          className="mt-5 flex w-full min-h-[52px] items-center justify-center rounded-xl bg-primary px-6 py-4 text-base font-semibold text-white shadow-md transition hover:opacity-95 active:scale-[0.99] sm:w-auto sm:min-w-[220px]"
         >
-          Scan QR
+          {scanLabel}
         </Link>
       </div>
 

@@ -30,6 +30,16 @@ apiClient.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  /** FormData + default `application/json` breaks multer (no boundary). Let the runtime set multipart + boundary. */
+  if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+    const h = config.headers;
+    if (h && typeof (h as { delete?: (k: string) => void }).delete === 'function') {
+      (h as { delete: (k: string) => void }).delete('Content-Type');
+    } else if (h && typeof h === 'object') {
+      delete (h as Record<string, unknown>)['Content-Type'];
+      delete (h as Record<string, unknown>)['content-type'];
+    }
+  }
   if (!shouldSkipGlobalLoader(config)) {
     getApiLoadingStore().begin();
   }
@@ -177,11 +187,10 @@ export const getProduct = (productId: string) => apiClient.get(`/products/${prod
 export const searchProducts = (q: string, shopId?: string, businessType?: string) =>
   apiClient.get('/products/search', { params: { q, shopId, businessType } });
 
-export const createProductForm = (form: FormData) =>
-  apiClient.post('/products', form, { headers: { 'Content-Type': 'multipart/form-data' } });
+export const createProductForm = (form: FormData) => apiClient.post('/products', form);
 
 export const updateProductForm = (productId: string, form: FormData) =>
-  apiClient.put(`/products/${productId}`, form, { headers: { 'Content-Type': 'multipart/form-data' } });
+  apiClient.put(`/products/${productId}`, form);
 
 export const deleteProduct = (productId: string) => apiClient.delete(`/products/${productId}`);
 
@@ -202,6 +211,21 @@ export const verifyPayment = (body: {
 export const listSubscriptions = () => apiClient.get('/subscriptions');
 
 export const getShopSubscription = (shopId: string) => apiClient.get(`/subscriptions/shop/${shopId}`);
+
+// —— Buyer membership (Businexa Plus) ——
+export const getBuyerPlans = () => apiClient.get('/buyer/subscription/plans');
+
+export const createBuyerOrder = (planId: string) =>
+  apiClient.post('/buyer/subscription/create-order', { planId });
+
+export const verifyBuyerPayment = (body: {
+  orderId: string;
+  paymentId: string;
+  signature: string;
+  planId: string;
+}) => apiClient.post('/buyer/subscription/verify-payment', body);
+
+export const listBuyerSubscriptions = () => apiClient.get('/buyer/subscription/mine');
 
 // —— Users ——
 export const getProfile = () => apiClient.get('/users/profile');

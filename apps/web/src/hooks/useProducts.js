@@ -12,6 +12,7 @@ export function useBrowseProducts() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [buyerPreview, setBuyerPreview] = useState(false);
 
   const browse = useCallback(async (businessType, p = 1, q = '') => {
     setLoading(true);
@@ -27,13 +28,15 @@ export function useBrowseProducts() {
       setProducts(data.products || []);
       setTotal(data.total || 0);
       setPage(data.page || p);
+      setBuyerPreview(Boolean(data.buyerCatalog?.preview));
     } catch {
       setError('Failed to load products');
       setProducts([]);
+      setBuyerPreview(false);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  return { products, total, page, loading, error, browse };
+  return { products, total, page, loading, error, browse, buyerPreview };
 }

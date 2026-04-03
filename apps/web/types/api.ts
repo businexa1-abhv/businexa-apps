@@ -1,5 +1,15 @@
 export type UserRole = 'buyer' | 'seller' | 'admin';
 
+/** Buyer Plus: 24h trial after signup, then paid membership for catalog + QR. */
+export interface BuyerAccess {
+  canAccessPremium: boolean;
+  inTrial: boolean;
+  trialEndsAt: string | null;
+  hasActiveSubscription: boolean;
+  subscriptionExpiresAt?: string | null;
+  role?: string | null;
+}
+
 export interface AuthUser {
   userId: string;
   /** Firebase Auth uid — sellers need this for Firestore `products` and Storage. */
@@ -12,6 +22,8 @@ export interface AuthUser {
   isNewUser?: boolean;
   /** Seller: from Firestore `users/{uid}.businessType` (via GET /auth/me). */
   businessType?: string;
+  /** Present when `role === 'buyer'` (from GET /auth/me). */
+  buyerAccess?: BuyerAccess;
 }
 
 export interface RegisterPasswordPayload {
@@ -87,6 +99,14 @@ export type FirestoreProduct = Product & {
 
 export interface SubscriptionPlan {
   id: 'monthly' | 'quarterly' | 'half_yearly' | 'yearly';
+  name: string;
+  price: number;
+  duration: number;
+}
+
+/** Buyer membership (Razorpay) — monthly, half-yearly, yearly. */
+export interface BuyerPlan {
+  id: 'buyer_monthly' | 'buyer_half_yearly' | 'buyer_yearly';
   name: string;
   price: number;
   duration: number;

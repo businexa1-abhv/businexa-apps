@@ -28,6 +28,7 @@ const qrRoutes = require('./routes/qr');
 const analyticsRoutes = require('./routes/analytics');
 const adminRoutes = require('./routes/admin');
 const businessCategoriesRoutes = require('./routes/businessCategories');
+const buyerSubscriptionRoutes = require('./routes/buyerSubscription');
 
 const app = express();
 
@@ -87,6 +88,7 @@ app.use('/api/qr', qrRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/business-categories', businessCategoriesRoutes);
+app.use('/api/buyer/subscription', buyerSubscriptionRoutes);
 
 // —— Global handlers (order matters) ——
 app.use(notFoundHandler);

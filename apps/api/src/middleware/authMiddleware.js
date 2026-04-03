@@ -109,6 +109,17 @@ async function optionalAuth(req, res, next) {
   return requireAuth(req, res, next);
 }
 
+/**
+ * Like `optionalAuth`, but invalid/expired tokens do not fail the request (public catalog + optional user).
+ */
+function optionalAuthLenient(req, res, next) {
+  if (!req.headers.authorization?.startsWith('Bearer ')) return next();
+  return requireAuth(req, res, (err) => {
+    if (err) return next();
+    next();
+  });
+}
+
 /** RBAC: require `req.dbUser.role` to be one of the allowed roles. */
 function requireRole(...roles) {
   return (req, res, next) => {
@@ -136,6 +147,7 @@ module.exports = {
   requireAuth,
   requireDbUser,
   optionalAuth,
+  optionalAuthLenient,
   requireRole,
   requireAdmin,
   requireSellerOrAdmin,

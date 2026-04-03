@@ -6,6 +6,12 @@ const { AppError } = require('../middleware/errorHandler');
 const productService = require('../services/productService');
 const firestoreProductService = require('../services/firestoreProductService');
 const cloudStorage = require('../utils/cloudStorage');
+const buyerAccessService = require('../services/buyerAccessService');
+
+async function buyerCatalogBlocked(req) {
+  const access = await buyerAccessService.getBuyerAccessForUser(req.dbUser);
+  return access.canAccessPremium ? null : access;
+}
 
 /**
  * Resolve image URL: uploaded file (Cloudinary) or body.imageUrl.
@@ -54,6 +60,17 @@ async function browsePublic(req, res, next) {
     const { category, businessType, q } = req.query;
     const needle = q != null ? String(q).trim() : '';
 
+    const blocked = await buyerCatalogBlocked(req);
+    if (blocked) {
+      res.set('Cache-Control', 'private, no-store');
+      return res.json({
+        products: [],
+        total: 0,
+        page,
+        buyerCatalog: { preview: true, ...blocked },
+      });
+    }
+
     let out = null;
     try {
       out = await firestoreProductService.listPublicCatalog({
@@ -90,6 +107,18 @@ async function listByShop(req, res, next) {
     const page = Math.max(1, Number(req.query.page) || 1);
     const limit = Math.min(100, Number(req.query.limit) || 20);
     const { shopId } = req.query;
+
+    const blocked = await buyerCatalogBlocked(req);
+    if (blocked) {
+      res.set('Cache-Control', 'private, no-store');
+      return res.json({
+        products: [],
+        total: 0,
+        page,
+        buyerCatalog: { preview: true, ...blocked },
+      });
+    }
+
     let out = null;
     try {
       out = await firestoreProductService.listByShop({ shopId, page, limit });
@@ -138,6 +167,14 @@ async function myProducts(req, res, next) {
 /** GET /api/products/:productId */
 async function getById(req, res, next) {
   try {
+    const blocked = await buyerCatalogBlocked(req);
+    if (blocked) {
+      throw new AppError(
+        'Subscribe or use your free trial to view products',
+        402,
+        'BUYER_SUBSCRIPTION_REQUIRED'
+      );
+    }
     let product = await firestoreProductService.getById(req.params.productId);
     if (!product) {
       product = await productService.getProductById(req.params.productId);
@@ -198,6 +235,10 @@ async function deleteProduct(req, res, next) {
 /** GET /api/products/category/:category?shopId= */
 async function byCategory(req, res, next) {
   try {
+    const blocked = await buyerCatalogBlocked(req);
+    if (blocked) {
+      return res.json({ products: [], buyerCatalog: { preview: true, ...blocked } });
+    }
     const products = await productService.listByCategory(req.params.category, req.query.shopId);
     res.json({ products });
   } catch (e) {
@@ -208,6 +249,10 @@ async function byCategory(req, res, next) {
 /** GET /api/products/search?q=&shopId=&businessType= */
 async function search(req, res, next) {
   try {
+    const blocked = await buyerCatalogBlocked(req);
+    if (blocked) {
+      return res.json({ products: [], buyerCatalog: { preview: true, ...blocked } });
+    }
     const products = await productService.searchProducts(
       req.query.q,
       req.query.shopId,

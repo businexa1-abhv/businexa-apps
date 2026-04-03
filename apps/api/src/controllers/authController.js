@@ -6,6 +6,7 @@
 const authService = require('../services/authService');
 const jwtAuthService = require('../services/jwtAuthService');
 const firestoreUserService = require('../services/firestoreUserService');
+const buyerAccessService = require('../services/buyerAccessService');
 const { initFirebaseAdmin } = require('../config/firebase');
 const { AppError } = require('../middleware/errorHandler');
 
@@ -123,11 +124,16 @@ async function getMe(req, res, next) {
     if (u.role === 'seller' && u.firebaseUid) {
       businessType = await firestoreUserService.getBusinessType(u.firebaseUid);
     }
+    let buyerAccess;
+    if (u.role === 'buyer') {
+      buyerAccess = await buyerAccessService.getBuyerAccessForUser(req.dbUser);
+    }
     res.json({
       user: {
         ...u,
         ...(businessType ? { businessType } : {}),
       },
+      ...(buyerAccess ? { buyerAccess } : {}),
     });
   } catch (e) {
     next(e);

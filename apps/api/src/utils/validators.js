@@ -199,6 +199,17 @@ const verifyPaymentBody = Joi.object({
   planId: Joi.string().valid('monthly', 'quarterly', 'half_yearly', 'yearly').required(),
 });
 
+const buyerCreateOrderBody = Joi.object({
+  planId: Joi.string().valid('buyer_monthly', 'buyer_half_yearly', 'buyer_yearly').required(),
+});
+
+const buyerVerifyPaymentBody = Joi.object({
+  orderId: Joi.string().required(),
+  paymentId: Joi.string().required(),
+  signature: Joi.string().required(),
+  planId: Joi.string().valid('buyer_monthly', 'buyer_half_yearly', 'buyer_yearly').required(),
+});
+
 const updateProfileBody = Joi.object({
   fullName: Joi.string().trim().max(200).allow('', null),
   email: Joi.string().email().allow('', null).max(320),
@@ -247,6 +258,8 @@ module.exports = {
   createShopBody,
   createOrderBody,
   verifyPaymentBody,
+  buyerCreateOrderBody,
+  buyerVerifyPaymentBody,
   updateProfileBody,
   updatePreferencesBody,
   refreshTokenZod,

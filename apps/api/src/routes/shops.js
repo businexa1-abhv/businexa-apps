@@ -15,7 +15,7 @@
  */
 const express = require('express');
 const shopController = require('../controllers/shopController');
-const { requireAuth, requireDbUser, requireRole } = require('../middleware/authMiddleware');
+const { requireAuth, requireDbUser, requireRole, optionalAuthLenient } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
@@ -31,7 +31,7 @@ router.post('/:shopId/generate-qr', ...auth, shopController.generateQr);
 router.put('/:shopId', ...auth, shopController.updateShop);
 router.delete('/:shopId', ...auth, shopController.deleteShop);
 
-router.get('/:shopIdOrSlug', shopController.getShopByIdOrSlug);
+router.get('/:shopIdOrSlug', optionalAuthLenient, shopController.getShopByIdOrSlug);
 
 router.post('/', ...auth, shopController.createShop);
 

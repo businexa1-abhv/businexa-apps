@@ -7,6 +7,15 @@ const { assertShopOwnerOrAdmin } = require('../utils/authorization');
 const shopService = require('../services/shopService');
 const qrService = require('../services/qrService');
 const firestoreProductService = require('../services/firestoreProductService');
+const buyerAccessService = require('../services/buyerAccessService');
+
+function stripShopForBuyerGate(shop) {
+  const o = shop && typeof shop.toObject === 'function' ? shop.toObject() : { ...shop };
+  delete o.qrCodeUrl;
+  delete o.publicUrl;
+  delete o.publicPath;
+  return o;
+}
 
 /** POST /api/shops — create */
 async function createShop(req, res, next) {
@@ -42,13 +51,21 @@ async function listPublicShops(req, res, next) {
   }
 }
 
-/** GET /api/shops/:shopIdOrSlug — public read by id or slug */
+/** GET /api/shops/:shopIdOrSlug — public read; buyers/guests without Plus see preview (no QR URLs). */
 async function getShopByIdOrSlug(req, res, next) {
   try {
     const shop = await shopService.findShopByIdOrSlug(req.params.shopIdOrSlug);
     if (!shop) throw new AppError('Shop not found', 404);
+    const access = await buyerAccessService.getBuyerAccessForUser(req.dbUser);
+    if (!access.canAccessPremium) {
+      res.set('Cache-Control', 'private, no-store');
+      return res.json({
+        shop: stripShopForBuyerGate(shop),
+        buyerCatalog: { preview: true, ...access },
+      });
+    }
     res.set('Cache-Control', 'public, max-age=3600');
-    res.json({ shop });
+    res.json({ shop, buyerCatalog: { preview: false } });
   } catch (e) {
     next(e);
   }
